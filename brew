@@ -1,0 +1,85 @@
+packages=(
+  git
+  tmux
+  z
+  ag
+  asdf
+  neovim
+  jq
+  fzf
+  fortune
+  bat
+)
+
+function install-brew() {
+  /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+}
+
+function load-bash-completion() {
+  if [ -f $(brew --prefix)/etc/bash_completion ]; then
+    source $(brew --prefix)/etc/bash_completion
+  fi
+}
+
+function load-z() {
+  [ -f $(brew --prefix)/etc/profile.d/z.sh ] && source $(brew --prefix)/etc/profile.d/z.sh
+}
+
+function load-fzf() {
+  [ -f ~/.fzf.bash ] && source ~/.fzf.bash
+}
+
+function load-asdf() {
+  [ -f $(brew --prefix asdf)/asdf.sh ] && source $(brew --prefix asdf)/asdf.sh
+}
+
+function load-spacemacs() {
+  [ ! -d ~/.emacs.d ] && git clone https://github.com/syl20bnr/spacemacs ~/.emacs.d
+}
+
+function load-tpm() {
+  [ ! -d ~/.tmux/plugins/tpm ] && git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
+}
+
+function old-install-packages() {
+  for package in "${packages[@]}"; do
+    info_output=$(brew list $package)
+
+    if [[ $? -eq 1 ]] ; then
+      echo ""
+      echo "Installing $package..."
+      echo ""
+      echo ""
+
+      brew install $package
+    fi
+  done
+}
+
+function install-packages() {
+  brew bundle --global check > /dev/null
+
+  if [ ! $? -eq 0 ]; then
+    brew bundle --global
+  fi
+}
+
+function create-bash-profile() {
+  if [ ! -f ~/.bash_profile ]; then
+    echo "source ~/.bashrc" >> ~/.bash_profile
+  fi
+}
+
+if dne brew; then
+  install-brew
+else
+  install-packages
+  load-bash-completion
+  load-z > /dev/null
+  load-fzf
+  load-asdf
+  load-spacemacs
+  load-tpm
+  create-bash-profile
+fi
+

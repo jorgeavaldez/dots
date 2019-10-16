@@ -37,4 +37,3 @@ set modelines=1
 
 " Syntax highlighting and that jazz
 syntax enable " Actually enable the syntax highlighting
-
