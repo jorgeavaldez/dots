@@ -45,8 +45,6 @@ brew "fish"
 brew "fortune"
 # Command-line fuzzy finder written in Go
 brew "fzf"
-# GNU awk utility
-brew "gawk"
 # X.509 and CMS library
 brew "libksba"
 # GNU Pretty Good Privacy (PGP) package
@@ -128,8 +126,11 @@ brew "sass/sass/sass"
 brew "asdf"
 cask "alacritty"
 cask "docker"
-cask "docker-toolbox"
 cask "emacs"
 cask "iterm2"
 cask "font-source-code-pro"
 cask "mysql-utilities"
+cask "contexts"
+cask "spectacle"
+cask "notion"
+cask "pastebot"
