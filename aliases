@@ -1,0 +1,28 @@
+function alias-misc() {
+  alias l="ls -ltah"
+  alias c="clear"
+}
+
+function alias-git() {
+  alias add="git add"
+  alias commit="git commit -m"
+  alias psh="git push"
+}
+
+function alias-dirs() {
+  alias work="cd ~/proj"
+  alias proj="cd ~/proj"
+  alias scratch="cd ~/proj/scratch"
+}
+
+function alias-emacs() {
+  alias e="emacsclient -c -n -a ''"
+  alias emacs="emacsclient -c -n -a ''"
+  alias space="emacsclient -c -n -a ''"
+  alias et="emacsclient -t -a ''"
+}
+
+alias-misc
+alias-git
+alias-dirs
+alias-emacs

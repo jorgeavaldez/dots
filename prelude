@@ -1,0 +1,23 @@
+export PATH=~/.local/bin:$PATH
+export WORKON_HOME=~/envs
+
+export GOPATH=~/proj/go
+export PATH=${GOPATH//://bin:}/bin:$PATH
+
+export EDITOR="emacsclient -t -a ''"
+export TERM=xterm-256color
+export CLICOLORS=true
+
+function dne() {
+  ! cmd_loc="$(type -p "$1")" || [[ -z $cmd_loc ]]
+}
+
+function symlink-configurations() {
+  ln -s ~/dots/.bashrc ~/.bashrc 2> /dev/null
+  ln -s ~/dots/Brewfile ~/.Brewfile 2> /dev/null
+  ln -s ~/dots/.tmux.conf ~/.tmux.conf 2> /dev/null
+  ln -s ~/dots/.spacemacs ~/.spacemacs 2> /dev/null
+  ln -s ~/dots/.vimrc ~/.vimrc 2> /dev/null
+}
+
+symlink-configurations
