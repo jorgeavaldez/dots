@@ -1,6 +1,8 @@
 function alias-misc() {
   alias l="ls -ltah"
   alias c="clear"
+  alias chrome="open -a Google\ Chrome --args --disable-web-security --user-data-dir \"\""
+  alias dco="docker-compose"
 }
 
 function alias-git() {

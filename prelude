@@ -18,6 +18,7 @@ function symlink-configurations() {
   ln -s ~/dots/.tmux.conf ~/.tmux.conf 2> /dev/null
   ln -s ~/dots/.spacemacs ~/.spacemacs 2> /dev/null
   ln -s ~/dots/.vimrc ~/.vimrc 2> /dev/null
+  [ -d ~/Library/Mobile\ Documents/com~apple~CloudDocs/ ] && ln -s ~/Library/Mobile\ Documents/com~apple~CloudDocs/ ~/icloud-drive 2> /dev/null
 }
 
 symlink-configurations
