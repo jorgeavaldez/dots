@@ -66,26 +66,20 @@ function dockerHousekeeping() {
 	echo 'Removing stopped containers...'
 	docker rm $( docker ps -q -f status=exited)
 
-	echo ''
-	echo 'YAY!!!'
-	echo ''
+  docker container prune
 
 	# remove dangling images
 	echo 'Removing dangling images...'
 	docker rmi $( docker images -q -f dangling=true)
 
-	echo ''
-	echo 'DONE!!!'
-	echo ''
-	echo 'glhf 😘'
-	echo ''
+  echo "Done!"
 }
 
 # such secure, do all the security
 # this is replacing ssh-agent i think?
-export GPG_TTY="$(tty)"
-export SSH_AUTH_SOCK=$(gpgconf --list-dirs agent-ssh-socket)
-gpgconf --launch gpg-agent
+# export GPG_TTY="$(tty)"
+# export SSH_AUTH_SOCK=$(gpgconf --list-dirs agent-ssh-socket)
+# gpgconf --launch gpg-agent
 
 # git shouldn't hurt
 alias add="git add"
@@ -96,28 +90,9 @@ alias psh="git push"
 alias work="cd ~/proj"
 alias proj="cd ~/proj"
 alias scratch="cd ~/proj/scratch"
-alias rg2="cd ~/proj/rg2"
-
-alias school="cd ~/school"
-alias s="cd ~/school"
 
 # docker aliases
 alias dhk="dockerHousekeeping"
-
-# run rg2 components
-alias run="docker-compose run --service-ports rg2 && echo \"\" && echo\"\" && fortune"
-alias rgtest="docker-compose run --service-ports rg2 ./runtests && fortune"
-alias rg2up="docker-compose up -d rg2"
-alias styleup="docker-compose up -d --no-deps style-server"
-alias mcpup="docker-compose up -d mcp"
-alias lrup="docker-compose up leadrouter"
-
-alias rgd="rgDebug"
-alias rgr="dco restart rg2"
-
-# building rg2 components
-alias rg2build="docker-compose build --no-cache rg2"
-alias rgb="rgSharedBump"
 
 # run good editor
 alias e="emacsclient -c -n -a ''"
@@ -131,8 +106,7 @@ alias whales?="docker ps"
 # remove pyc files
 alias pyc="find . -name \*.pyc -delete"
 
-# symlink python2 as a binary in the python3 directory
-alias linkpy2="ln -s /usr/local/opt/python@2/bin/python /usr/local/opt/python/bin/python2.7"
+alias diffx="git status --porcelain | grep -v package-lock.json | cut -b 4- | xargs git diff"
 
 # restart gpg agent since that shit will just bork
 function reload-gpg-agent() {
@@ -158,7 +132,6 @@ fi
 source ~/.profile
 
 function startRoutine() {
-    # yas
     clear
     echo ""
     fortune
