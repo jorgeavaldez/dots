@@ -124,6 +124,7 @@ brew "heroku/brew/heroku"
 # Stylesheet Preprocessor
 brew "sass/sass/sass"
 brew "asdf"
+brew "rustup-init"
 cask "alacritty"
 cask "docker"
 cask "emacs"
