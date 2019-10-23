@@ -63,8 +63,6 @@ brew "httpie"
 brew "jq"
 # Kubernetes command-line interface
 brew "kubernetes-cli"
-# LastPass command-line interface tool
-brew "lastpass-cli"
 # YAML Parser
 brew "libyaml"
 # Clone of ls with colorful output, file type icons, and more
@@ -105,6 +103,7 @@ brew "tree"
 brew "vault"
 # Watch files and take action when they change
 brew "watchman"
+brew "nvm"
 # JavaScript package manager
 brew "yarn"
 # YubiKey personalization library and tool
@@ -125,6 +124,7 @@ brew "heroku/brew/heroku"
 brew "sass/sass/sass"
 brew "asdf"
 brew "rustup-init"
+brew "starship"
 cask "alacritty"
 cask "docker"
 cask "emacs"
@@ -135,3 +135,6 @@ cask "contexts"
 cask "spectacle"
 cask "notion"
 cask "pastebot"
+cask "font-hack"
+cask "1password"
+cask "visual-studio-code"
