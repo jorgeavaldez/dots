@@ -59,7 +59,7 @@ function create-bash-profile() {
 if dne brew; then
   install-brew
 else
-  install-packages
+  # install-packages
   load-bash-completion
   load-z > /dev/null
   load-fzf
