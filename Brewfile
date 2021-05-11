@@ -103,7 +103,7 @@ brew "tree"
 brew "vault"
 # Watch files and take action when they change
 brew "watchman"
-brew "nvm"
+# brew "nvm"
 # JavaScript package manager
 brew "yarn"
 # YubiKey personalization library and tool
@@ -139,3 +139,4 @@ cask "font-hack"
 cask "1password"
 cask "visual-studio-code"
 cask "spotify"
+cask "insomnia"
