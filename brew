@@ -29,7 +29,7 @@ function load-tpm() {
 }
 
 function load-starship() {
-  eval "$(starship init bash)"
+  command -v starship 2>&1 > /dev/null && eval "$(starship init bash)" || install-packages
 }
 
 function load-nvm() {
@@ -56,18 +56,26 @@ function create-bash-profile() {
   fi
 }
 
-if dne brew; then
-  install-brew
-else
-  install-packages
-  load-bash-completion
-  load-z > /dev/null
-  load-fzf
-  load-asdf
-  load-spacemacs
-  load-tpm
-  load-starship
-  load-nvm
-  create-bash-profile
-fi
+# if dne brew; then
+#   install-brew
+# else
+#   # install-packages
+#   load-bash-completion
+#   load-z > /dev/null
+#   load-fzf
+#   load-asdf
+#   load-spacemacs
+#   load-tpm
+#   load-starship
+#   # load-nvm
+# fi
+
+# install-packages
+load-bash-completion
+load-z > /dev/null
+load-fzf
+load-asdf
+load-spacemacs
+load-tpm
+load-starship
 
