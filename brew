@@ -56,19 +56,19 @@ function create-bash-profile() {
   fi
 }
 
-# if dne brew; then
-#   install-brew
-# else
-#   # install-packages
-#   load-bash-completion
-#   load-z > /dev/null
-#   load-fzf
-#   load-asdf
-#   load-spacemacs
-#   load-tpm
-#   load-starship
-#   # load-nvm
-# fi
+if dne brew; then
+  install-brew
+else
+  # install-packages
+  load-bash-completion
+  load-z > /dev/null
+  load-fzf
+  load-asdf
+  load-spacemacs
+  load-tpm
+  load-starship
+  # load-nvm
+fi
 
 # install-packages
 load-bash-completion
