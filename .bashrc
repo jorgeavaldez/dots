@@ -8,3 +8,10 @@ echo ""
 fortune
 echo ""
 echo ""
+
+###-tns-completion-start-###
+if [ -f /Users/delvaze/.tnsrc ]; then 
+    source /Users/delvaze/.tnsrc 
+fi
+###-tns-completion-end-###
+. "$HOME/.cargo/env"
