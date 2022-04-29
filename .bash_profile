@@ -1,6 +1,8 @@
-source ~/dots/prelude
-source ~/dots/brew
-source ~/dots/aliases
+eval "$(/opt/homebrew/bin/brew shellenv)"
+source ~/dots/scripts/prelude.sh
+source ~/dots/scripts/brew.sh
+source ~/dots/scripts/aliases.sh
+source ~/dots/scripts/path.sh
 
 clear
 echo ""
@@ -8,7 +10,9 @@ echo ""
 fortune
 echo ""
 echo ""
-export PATH="/usr/local/opt/node@14/bin:$PATH"
-. "$HOME/.cargo/env"
-export PATH="/Users/jorge/.local/share/solana/install/active_release/bin:$PATH"
-export NODE_PATH="/usr/local/bin"
+eval "$(/opt/homebrew/bin/brew shellenv)"
+
+# The next line enables shell command completion for gcloud.
+if [ -f '/Users/jorge/google-cloud-sdk/completion.bash.inc' ]; then . '/Users/jorge/google-cloud-sdk/completion.bash.inc'; fi
+
+echo "bash_profile"

@@ -27,4 +27,4 @@ function alias-emacs() {
 alias-misc
 alias-git
 alias-dirs
-alias-emacs
+# alias-emacs

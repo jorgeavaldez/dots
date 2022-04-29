@@ -1,6 +1,8 @@
-source ~/dots/prelude
-source ~/dots/aliases
-source ~/dots/brew
+eval "$(/opt/homebrew/bin/brew shellenv)"
+source ~/dots/scripts/prelude.sh
+source ~/dots/scripts/brew.sh
+source ~/dots/scripts/aliases.sh
+source ~/dots/scripts/path.sh
 
 clear
 echo ""
@@ -8,6 +10,4 @@ echo ""
 fortune
 echo ""
 echo ""
-. "$HOME/.cargo/env"
 
-export PATH="$HOME/.yarn/bin:$HOME/.config/yarn/global/node_modules/.bin:$PATH"
