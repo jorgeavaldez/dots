@@ -50,7 +50,9 @@ values."
      go
      yaml
      html
-     python
+
+     (python :variables python-formatter 'black)
+
      (javascript :variables
                  javascript-backend 'lsp
                  javascript-repl `nodejs)
@@ -101,7 +103,7 @@ values."
      ;; version-control
      )
    ;; List of additional packages that will be installed without being
-   ;; wrapped in a layer. If you need some configuration for these
+   ;; wrapped in a layer. If you need some confiHackguration for these
    ;; packages, then consider creating a layer. You can also put the
    ;; configuration in `dotspacemacs/user-config'.
    dotspacemacs-additional-packages
@@ -187,8 +189,8 @@ values."
    dotspacemacs-colorize-cursor-according-to-state t
    ;; Default font, or prioritized list of fonts. `powerline-scale' allows to
    ;; quickly tweak the mode-line size to make separators look not too crappy.
-   dotspacemacs-default-font '("Hack"
-                               :size 13
+   dotspacemacs-default-font '("Monaco Nerd Font"
+                               :size 12
                                :weight normal
                                :width normal
                                :powerline-scale 1.1)
@@ -388,9 +390,7 @@ before packages are loaded. If you are unsure, you should try in setting them in
   ;; magit fullscreen
   ;; just because opening below where my eyes are was not very cash money
   (setq-default git-magit-status-fullscreen t)
-
-  ;; so git commits should open in here for editing because i'm a bitch like that
-  (global-git-commit-mode t)
+  (setq projectile-project-search-path '("~/proj/" "~/proj/werk/"))
 
   ;; (require 'org-projectile)
   ;; (setq org-agenda-files (append org-agenda-files (org-projectile-todo-files)))
@@ -419,8 +419,11 @@ you should place your code here."
 
   ;; make projectile find file less slow
   (setq projectile-enable-caching t)
-
+  
   (global-auto-revert-mode t)
+
+  ;; so git commits should open in here for editing because i'm a bitch like that
+  (global-git-commit-mode t)
 
   ;; set org-babel language package installation
   (with-eval-after-load 'org

@@ -1,5 +1,5 @@
 function alias-misc() {
-  alias l="ls -ltah"
+  alias l="exa -l -a -h"
   alias c="clear"
   alias chrome="open -a Google\ Chrome --args --disable-web-security --user-data-dir \"\""
   alias dco="docker-compose"
@@ -24,7 +24,23 @@ function alias-emacs() {
   alias et="emacsclient -t -a ''"
 }
 
+function reload() {
+  . ~/.bashrc
+}
+
+function kshell() {
+  kubectl exec -it "$1" -- /bin/bash
+}
+
+
+function kscale() {
+  kubectl scale "deployment/$1" --replicas=$2
+}
+
+
+alias pn="pnpm"
+
 alias-misc
 alias-git
 alias-dirs
-# alias-emacs
+alias-emacs

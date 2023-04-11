@@ -4,10 +4,12 @@ source ~/dots/scripts/brew.sh
 source ~/dots/scripts/aliases.sh
 source ~/dots/scripts/path.sh
 
-clear
+if [ -f '~/dots/scripts/private.sh' ]; then . '~/dots/scripts/private.sh'; fi
+
 echo ""
 echo ""
 fortune
 echo ""
 echo ""
+
 

@@ -5,3 +5,8 @@ disabled = false
 
 [aws]
 disabled = true
+
+[gcloud]
+disabled = true
+
+command_timeout = 1000

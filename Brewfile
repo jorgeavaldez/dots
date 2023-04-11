@@ -19,10 +19,6 @@ brew "openssl"
 brew "openssl@1.1"
 # Library for command-line editing
 brew "readline", link: true
-# Interpreted, interactive, object-oriented programming language
-brew "python"
-# Simple command-line tool to read AWS CloudWatch logs
-brew "awslogs"
 # Bourne-Again SHell, a UNIX command interpreter
 brew "bash"
 # Programmable completion for Bash 3.2
@@ -65,10 +61,6 @@ brew "jq"
 brew "kubernetes-cli"
 # YAML Parser
 brew "libyaml"
-# Clone of ls with colorful output, file type icons, and more
-brew "lsd"
-# Interpreted, interactive, object-oriented programming language
-brew "python@2"
 # Scalable distributed version control system
 brew "mercurial"
 # Protocol buffers (Google's data interchange format)
@@ -91,52 +83,30 @@ brew "pandoc"
 brew "pinentry-mac"
 # Python dependency management tool
 brew "pipenv"
-# Python version management
-brew "pyenv"
 # Code-search similar to ack
 brew "the_silver_searcher"
 # Terminal multiplexer
 brew "tmux"
 # Display directories as trees (with optional color/HTML output)
 brew "tree"
-# Secures, stores, and tightly controls access to secrets
-brew "vault"
 # Watch files and take action when they change
 brew "watchman"
-# brew "nvm"
-# JavaScript package manager
-brew "yarn"
 # YubiKey personalization library and tool
 brew "ykpers"
 # Tool for managing your YubiKey configuration
 brew "ykman"
-# Download YouTube videos from the command-line
-brew "youtube-dl"
 # Tracks most-used directories to make cd smarter
 brew "z"
-# AWS SAM CLI 🐿 is a tool for local development and testing of Serverless applications
-brew "aws/tap/aws-sam-cli"
-# GNU Emacs text editor
-brew "d12frosted/emacs-plus/emacs-plus"
-# Everything you need to get started with Heroku
-brew "heroku/brew/heroku"
-# Stylesheet Preprocessor
-brew "sass/sass/sass"
 brew "asdf"
 brew "rustup-init"
 brew "starship"
-cask "alacritty"
 cask "docker"
-cask "emacs"
 cask "iterm2"
 cask "font-source-code-pro"
 cask "mysql-utilities"
 cask "contexts"
-cask "spectacle"
-cask "notion"
 cask "pastebot"
 cask "font-hack"
 cask "1password"
 cask "visual-studio-code"
 cask "spotify"
-cask "insomnia"
