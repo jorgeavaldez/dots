@@ -17,11 +17,10 @@ function alias-dirs() {
   alias scratch="cd ~/proj/scratch"
 }
 
-function alias-emacs() {
-  alias e="emacsclient -c -n -a ''"
-  alias emacs="emacsclient -c -n -a ''"
-  alias space="emacsclient -c -n -a ''"
-  alias et="emacsclient -t -a ''"
+function alias-editor() {
+  alias e="nvim"
+  alias n="nvim"
+  alias nconf="nvim ~/.config/nvim/"
 }
 
 function reload() {
@@ -43,4 +42,4 @@ alias pn="pnpm"
 alias-misc
 alias-git
 alias-dirs
-alias-emacs
+alias-editor
