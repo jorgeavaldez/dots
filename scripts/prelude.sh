@@ -56,6 +56,7 @@ function symlink-configurations() {
 
   [ ! -d ~/.config/ ] && mkdir ~/.config/ 2>/dev/null
   [ -d ~/.config/ ] && ln -s ~/dots/starship.toml ~/.config/starship.toml 2>/dev/null
+  [ ! -d ~/.config/wezterm/ ] && ln -s ~/dots/wezterm ~/.config/wezterm 2>/dev/null
 }
 
 symlink-configurations
