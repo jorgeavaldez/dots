@@ -28,4 +28,7 @@ config.keys = {
 };
 --]]
 
+config.window_decorations = "INTEGRATED_BUTTONS|RESIZE";
+config.window_frame = { border_top_height = "0.5cell" };
+
 return config
