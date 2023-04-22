@@ -12,7 +12,9 @@ config.font = wezterm.font "JetBrains Mono";
 
 config.use_fancy_tab_bar = false;
 
-config.window_decorations = "INTEGRATED_BUTTONS|RESIZE";
+-- idk if i want the top buttons yet since it looks cleaner with full screen term window in vscode
+-- config.window_decorations = "INTEGRATED_BUTTONS|RESIZE";
+config.window_decorations = "RESIZE";
 config.window_frame = { border_top_height = "0.5cell" };
 config.colors = {
     tab_bar = {
