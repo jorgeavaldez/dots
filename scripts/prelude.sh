@@ -1,33 +1,40 @@
-export BASH_SILENCE_DEPRECATION_WARNING=1
+if [ "$OSTYPE" == "darwin" ]; then
+    export BASH_SILENCE_DEPRECATION_WARNING=1
+fi
 
+# export PATH="/usr/local/sbin:$PATH"
 export PATH=~/.local/bin:$PATH
 export WORKON_HOME=~/envs
 
+# go
 export GOPATH=~/proj/go
 export PATH=${GOPATH//://bin:}/bin:$PATH
-export PATH="/usr/local/sbin:$PATH"
+
 
 export EDITOR="nvim"
-export TERM=xterm-256color
 export CLICOLOR=1
 export BAT_THEME="ansi"
+# export TERM=xterm-256color
+
+if [ "$OSTYPE" == "linux-gnu" ]; then
+    export JAVA_HOME="/usr/lib/jvm/java-11-openjdk"
+    export ANDROID_HOME="/home/jorge/Android/Sdk"
+    export ANDROID_SDK_ROOT="/home/jorge/Android/Sdk"
+fi
 
 export PATH=$PATH:$ANDROID_HOME/emulator
 export PATH=$PATH:$ANDROID_HOME/tools
 export PATH=$PATH:$ANDROID_HOME/tools/bin
 export PATH=$PATH:$ANDROID_HOME/platform-tools
+export PATH="${JAVA_HOME}/bin:${PATH}"
 
-export PATH="/Users/jorge/Library/Python/3.9/bin:$PATH"
+# export PATH="/Users/jorge/Library/Python/3.9/bin:$PATH"
 
 # bun
 export BUN_INSTALL="$HOME/.bun"
 export PATH=$BUN_INSTALL/bin:$PATH
 
 export USE_GKE_GCLOUD_AUTH_PLUGIN=True
-
-export PYENV_ROOT="$HOME/.pyenv"
-command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
-eval "$(pyenv init -)"
 
 jdk() {
   version=$1
