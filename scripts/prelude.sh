@@ -7,7 +7,7 @@ export GOPATH=~/proj/go
 export PATH=${GOPATH//://bin:}/bin:$PATH
 export PATH="/usr/local/sbin:$PATH"
 
-export EDITOR="hx"
+export EDITOR="nvim"
 export TERM=xterm-256color
 export CLICOLOR=1
 export BAT_THEME="ansi"
