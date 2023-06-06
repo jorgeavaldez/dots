@@ -10,6 +10,7 @@ config.color_scheme = 'Catppuccin Mocha';
 -- config.color_scheme = 'Oxocarbon Dark';
 -- config.color_scheme = "tokyonight"
 config.font = wezterm.font "JetBrains Mono";
+config.font_size = 16;
 
 config.use_fancy_tab_bar = false;
 
