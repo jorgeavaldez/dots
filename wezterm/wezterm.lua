@@ -41,4 +41,14 @@ config.keys = {
     },
 };
 --]]
+
+-- ssh into home machine
+config.ssh_domains = {
+    {
+        name = 'foo.local',
+        remote_address = 'foo.local',
+        username = 'jorge'
+    }
+}
+
 return config
