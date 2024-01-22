@@ -6,7 +6,8 @@ if wezterm.config_builder then
     config = wezterm.config_builder()
 end
 
-config.color_scheme = 'Oxocarbon Dark';
+config.color_scheme = 'Catppuccin Mocha';
+-- config.color_scheme = 'Oxocarbon Dark';
 -- config.color_scheme = "tokyonight"
 config.font = wezterm.font "JetBrains Mono";
 
