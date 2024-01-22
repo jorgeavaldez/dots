@@ -97,7 +97,7 @@ brew "ykpers"
 brew "ykman"
 # Tracks most-used directories to make cd smarter
 brew "z"
-brew "asdf"
+# brew "asdf"
 brew "rustup-init"
 brew "starship"
 cask "docker"

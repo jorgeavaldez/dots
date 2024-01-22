@@ -25,6 +25,9 @@ export PATH=$BUN_INSTALL/bin:$PATH
 
 export USE_GKE_GCLOUD_AUTH_PLUGIN=True
 
+export PYENV_ROOT="$HOME/.pyenv"
+command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init -)"
 
 jdk() {
   version=$1

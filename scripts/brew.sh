@@ -74,7 +74,7 @@ function create-bash-profile() {
 load-bash-completion
 load-z >/dev/null
 load-fzf
-load-asdf
-load-spacemacs
+# load-asdf
+# load-spacemacs
 load-tpm
 load-starship

@@ -11,3 +11,5 @@ export NODE_PATH="/usr/local/bin"
 
 # The next line updates PATH for the Google Cloud SDK.
 if [ -f '/Users/jorge/google-cloud-sdk/path.bash.inc' ]; then . '/Users/jorge/google-cloud-sdk/path.bash.inc'; fi
+
+eval "$(~/bin/rtx activate bash)"
