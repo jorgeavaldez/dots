@@ -1,22 +1,29 @@
-local wezterm = require "wezterm"
+local wezterm = require("wezterm")
+local appearance = require("appearance")
 
 local config = {}
 
 if wezterm.config_builder then
-    config = wezterm.config_builder()
+	config = wezterm.config_builder()
 end
 
-config.color_scheme = 'Catppuccin Mocha';
--- config.color_scheme = 'Oxocarbon Dark';
--- config.color_scheme = "tokyonight"
-config.font = wezterm.font "JetBrains Mono";
+if appearance.is_dark() then
+	config.color_scheme = "Catppuccin Mocha"
+else
+	config.color_scheme = "Catppuccin Latte"
+end
 
-config.use_fancy_tab_bar = false;
+config.font = wezterm.font("JetBrains Mono")
+config.font_size = 12
+
+config.use_fancy_tab_bar = false
 
 -- idk if i want the top buttons yet since it looks cleaner with full screen term window in vscode
 -- config.window_decorations = "INTEGRATED_BUTTONS|RESIZE";
-config.window_decorations = "RESIZE";
-config.window_frame = { border_top_height = "0.5cell" };
+config.window_decorations = "RESIZE"
+config.window_frame = { border_top_height = "0.5cell" }
+
+--[[
 config.colors = {
     tab_bar = {
         -- this is to match the oxocarbon dark color since otherwise it looks weird with the top buttons
@@ -24,31 +31,31 @@ config.colors = {
         background = "#161616",
     },
 };
-
--- custom key binds
---[[
-config.leader = {
-    key = ";",
-    mods = "CTRL",
-    timeout_milliseconds = 1000,
-};
-
-config.keys = {
-    {
-        key = "t",
-        mods = "LEADER",
-        action = wezterm.action.SpawnTab "CurrentPaneDomain",
-    },
-};
 --]]
 
--- ssh into home machine
-config.ssh_domains = {
-    {
-        name = 'foo.local',
-        remote_address = 'foo.local',
-        username = 'jorge'
-    }
+-- custom key binds
+config.leader = {
+	key = "'",
+	mods = "CTRL",
+	timeout_milliseconds = 1000,
+}
+
+config.keys = {
+	{
+		key = "t",
+		mods = "LEADER",
+		action = wezterm.action.SpawnTab("CurrentPaneDomain"),
+	},
+	{
+		key = "v",
+		mods = "LEADER",
+		action = wezterm.action.SplitVertical,
+	},
+	{
+		key = "h",
+		mods = "LEADER",
+		action = wezterm.action.SplitHorizontal,
+	},
 }
 
 return config
