@@ -15,6 +15,7 @@ end
 
 config.font = wezterm.font("JetBrains Mono")
 config.font_size = 12
+config.max_fps = 120
 
 config.use_fancy_tab_bar = false
 
