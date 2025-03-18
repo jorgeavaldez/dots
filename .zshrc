@@ -1,16 +1,15 @@
-# Use powerline
-USE_POWERLINE="true"
-
 # Source manjaro-zsh-configuration
 if [[ -e /usr/share/zsh/manjaro-zsh-config ]]; then
-  source /usr/share/zsh/manjaro-zsh-config
+	source /usr/share/zsh/manjaro-zsh-config
 fi
 
-# Use manjaro zsh prompt
+# Manjaro zsh prompt
 # if [[ -e /usr/share/zsh/manjaro-zsh-prompt ]]; then
 #   source /usr/share/zsh/manjaro-zsh-prompt
 # fi
 
+# I like to use 1password to manage my ssh keys
+# Typically i bypass this by restarting the ssh agent manually
 if [[ ! -f "$SSH_AUTH_SOCK" ]]; then
 	export SSH_AUTH_SOCK=~/.1password/agent.sock
 fi
@@ -25,21 +24,8 @@ alias branch="git checkout -b"
 alias psh="git push"
 alias proj="cd ~/proj"
 alias pn="pnpm"
-
 alias n="nvim"
 alias e="nvim"
-
-function kshell() {
-	kubectl exec -it "$1" -- /bin/bash
-}
-
-function kscale() {
-	kubectl scale deployment/$1 --replicas=$2
-}
-
-function klogs() {
-    kubectl logs -f "$1" "$2"
-}
 
 export EDITOR="nvim"
 export BAT_THEME="ansi"
@@ -48,22 +34,24 @@ set -o vi
 bindkey -v '^?' backward-delete-char
 bindkey -a '^[[3~' delete-char
 
-# The next line updates PATH for the Google Cloud SDK.
-if [ -f '/home/jorge/bin/google-cloud-sdk/path.zsh.inc' ]; then . '/home/jorge/bin/google-cloud-sdk/path.zsh.inc'; fi
+function kshell() {
+	kubectl exec -it "$1" -- /bin/bash
+}
 
-# The next line enables shell command completion for gcloud.
-if [ -f '/home/jorge/bin/google-cloud-sdk/completion.zsh.inc' ]; then . '/home/jorge/bin/google-cloud-sdk/completion.zsh.inc'; fi
+function kscale() {
+	kubectl scale deployment/"$1" --replicas="$2"
+}
 
-# nnn
-export NNN_PLUG='f:fzcd;o:fzopen;p:mocq;d:diffs;t:nmount;v:imgview'
-export NNN_OPTS="HdeA"
+function klogs() {
+	kubectl logs -f "$1" "$2"
+}
 
 function plsown() {
-	sudo chown -R $USER $1
+	sudo chown -R "$USER" "$1"
 }
 
 function reload() {
-	. ~/.zshrc
+	source "$HOME/.zshrc"
 }
 
 function myip() {
@@ -71,11 +59,11 @@ function myip() {
 }
 
 function dsquashed() {
-	TARGET_BRANCH=${1:-main} && git checkout -q $TARGET_BRANCH && git for-each-ref refs/heads/ "--format=%(refname:short)" | while read branch; do mergeBase=$(git merge-base $TARGET_BRANCH $branch) && [[ $(git cherry $TARGET_BRANCH $(git commit-tree $(git rev-parse $branch\^{tree}) -p $mergeBase -m _)) == "-"* ]] && git branch -D $branch; done
+	TARGET_BRANCH=${1:-main} && git checkout -q "$TARGET_BRANCH" && git for-each-ref refs/heads/ "--format=%(refname:short)" | while read -r branch; do mergeBase=$(git merge-base "$TARGET_BRANCH" "$branch") && [[ $(git cherry "$TARGET_BRANCH" $(git commit-tree $(git rev-parse $branch\^{tree}) -p "$mergeBase" -m _)) == "-"* ]] && git branch -D "$branch"; done
 }
 
 function deletepyc() {
-    sudo find . -name "*.pyc" -exec rm -f {} \;
+	sudo find . -name "*.pyc" -exec rm -f {} \;
 }
 
 function editionuri() {
@@ -95,16 +83,16 @@ function gensecret() {
 }
 
 function invenv() {
- 	python -c 'import sys; print ("0" if sys.prefix == sys.base_prefix else "1")' 2>/dev/null
+	python -c 'import sys; print ("0" if sys.prefix == sys.base_prefix else "1")' 2>/dev/null
 }
 
 function mern() {
-	date -d $1 +"%Y-%m-%d %H:%M:%S"
+	date -d "$1" +"%Y-%m-%d %H:%M:%S"
 }
 
 function djm() {
 	if ! invenv; then
-		poetry shell;
+		poetry shell
 	fi
 
 	python manage.py "$@"
@@ -115,7 +103,7 @@ function rmnodemodules() {
 }
 
 function pbcopy() {
-  xclip -selection clipboard
+	xclip -selection clipboard
 }
 
 function stprod() {
@@ -135,8 +123,8 @@ function bastistaging() {
 }
 
 function rename-go-mod() {
-	find . -name '*.go' -print0 \
-	  | xargs -0 sed -i -e "s|$1|$2|"
+	find . -name '*.go' -print0 |
+		xargs -0 sed -i -e "s|$1|$2|"
 }
 
 function prnotes() {
@@ -148,7 +136,7 @@ function whichlogs() {
 }
 
 function ssmdb() {
-    aws secretsmanager list-secrets | jq -r --arg env "$1" '
+	aws secretsmanager list-secrets | jq -r --arg env "$1" '
         .SecretList[] |
         select(
             (.Name | contains("backendclusterAuroraSecret")) and
@@ -185,7 +173,6 @@ function drakdbp() {
 	pgcli postgres://postgres:$(ssmdbval $1 | jq -r .password)@127.0.0.1:5433/drakula
 }
 
-
 function pgd() {
 	pgcli postgres://postgres:password@127.0.0.1:5432/$1
 }
@@ -199,31 +186,41 @@ function secret() {
 }
 
 export JAVA_HOME="/usr/lib/jvm/java-11-openjdk"
-export ANDROID_HOME="/home/jorge/Android/Sdk"
-export ANDROID_SDK_ROOT="/home/jorge/Android/Sdk"
+export ANDROID_HOME="$HOME/Android/Sdk"
+export ANDROID_SDK_ROOT="$HOME/Android/Sdk"
 
 export BUN_INSTALL="$HOME/.bun"
-export FLYCTL_INSTALL="/home/jorge/.fly"
+export FLYCTL_INSTALL="$HOME/.fly"
+
+if [ -f "$HOME/bin/google-cloud-sdk/path.zsh.inc" ]; then . "$HOME/bin/google-cloud-sdk/path.zsh.inc"; fi
 
 export PATH="${PATH}:${ANDROID_SDK_ROOT}/emulator"
 export PATH="${PATH}:${ANDROID_SDK_ROOT}/platform-tools"
 export PATH="${JAVA_HOME}/bin:${PATH}"
-export PATH="${PATH}:/home/jorge/bin"
-export PATH="/home/jorge/.ebcli-virtual-env/executables:${PATH}"
-export PATH="${PATH}:/home/jorge/.foundry/bin"
-export PATH="/home/jorge/.local/share/solana/install/active_release/bin:${PATH}"
+export PATH="${PATH}:$HOME/bin"
+export PATH="$HOME/.ebcli-virtual-env/executables:${PATH}"
+export PATH="${PATH}:$HOME/.foundry/bin"
+export PATH="$HOME/.local/share/solana/install/active_release/bin:${PATH}"
 export PATH="$BUN_INSTALL/bin:${PATH}"
-export PATH="/home/jorge/proj/solidity-one-liners/bin:${PATH}"
-export PATH="/home/jorge/.nimble/bin:${PATH}"
-export PATH="/home/jorge/.cargo/bin:${PATH}"
-export PATH="/home/jorge/go/bin:${PATH}"
+export PATH="$HOME/proj/solidity-one-liners/bin:${PATH}"
+export PATH="$HOME/.nimble/bin:${PATH}"
+export PATH="$HOME/.cargo/bin:${PATH}"
+export PATH="$HOME/go/bin:${PATH}"
 export PATH="$FLYCTL_INSTALL/bin:$PATH"
+
+export PNPM_HOME="$HOME/.local/share/pnpm"
+case ":$PATH:" in
+*":$PNPM_HOME:"*) ;;
+*) export PATH="$PNPM_HOME:$PATH" ;;
+esac
 
 export USE_GKE_GCLOUD_AUTH_PLUGIN=True
 export CLOUDSDK_DEVAPPSERVER_PYTHON="/usr/bin/python2"
 
-source ~/dots/secrets.sh
+source "$HOME/dots/secrets.sh"
 
+# this is a vscode plugin for a fuzzy search w/ ripgrep that mimics telescope in neovim
+# unfortunately it doesn't like some of these shell hooks so i disable them to get a faster startup
 if [[ $FIND_IT_FASTER_ACTIVE -eq 0 ]]; then
 	eval "$(atuin init zsh)"
 	eval "$(zoxide init zsh)"
@@ -231,18 +228,9 @@ if [[ $FIND_IT_FASTER_ACTIVE -eq 0 ]]; then
 	eval "$(starship init zsh)"
 fi
 
+# completions
 autoload -Uz compinit && compinit
 autoload bashcompinit && bashcompinit
+if [ -f "$HOME/bin/google-cloud-sdk/completion.zsh.inc" ]; then . "$HOME/bin/google-cloud-sdk/completion.zsh.inc"; fi
 complete -C '/usr/local/bin/aws_completer' aws
-
-# pnpm
-export PNPM_HOME="/home/jorge/.local/share/pnpm"
-case ":$PATH:" in
-  *":$PNPM_HOME:"*) ;;
-  *) export PATH="$PNPM_HOME:$PATH" ;;
-esac
-# pnpm end
-
-# bun completions
-[ -s "/home/jorge/.bun/_bun" ] && source "/home/jorge/.bun/_bun"
-
+[ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
