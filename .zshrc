@@ -202,6 +202,34 @@ function secret() {
 	op item list --categories 'API Credential' | rg -i $1 | awk '{print $1}' | xargs -n1 op item get --fields credential
 }
 
+# function sstdb() {
+# 	if [[ -z "${SST_RESOURCE_TenkayDB}" ]]; then
+# 		echo "Error: SST_RESOURCE_TenkayDB environment variable is not set"
+# 		kill $TUNNEL_PID
+# 		exit 1
+# 	fi
+# 
+# 	if ! command -v jq &> /dev/null; then
+# 		echo "Error: jq is not installed but required for JSON parsing"
+# 		kill $TUNNEL_PID
+# 		exit 1
+# 	fi
+# 
+# 	DB_NAME=$(echo $SST_RESOURCE_TenkayDB | jq -r '.database // ""')
+# 	DB_HOST=$(echo $SST_RESOURCE_TenkayDB | jq -r '.host // ""')
+# 	DB_PORT=$(echo $SST_RESOURCE_TenkayDB | jq -r '.port // ""')
+# 	DB_USER=$(echo $SST_RESOURCE_TenkayDB | jq -r '.username // ""')
+# 	DB_PASS=$(echo $SST_RESOURCE_TenkayDB | jq -r '.password // ""')
+# 
+# 	if [[ -z "$DB_NAME" || -z "$DB_HOST" || -z "$DB_PORT" || -z "$DB_USER" || -z "$DB_PASS" ]]; then
+# 		echo "Error: Missing required database connection information in SST_RESOURCE_TenkayDB"
+# 		echo "Required fields: database, host, port, username, password"
+# 		exit 1
+# 	fi
+# 
+# 	PGPASSWORD="${DB_PASS}" psql -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER}" -d "${DB_NAME}"
+# }
+
 export JAVA_HOME="/usr/lib/jvm/java-11-openjdk"
 export ANDROID_HOME="/home/jorge/Android/Sdk"
 export ANDROID_SDK_ROOT="/home/jorge/Android/Sdk"

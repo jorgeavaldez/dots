@@ -1,3 +1,4 @@
 scripts/private.sh
 secrets.sh
 .DS_Store
+.aider*
