@@ -25,7 +25,13 @@ alias psh="git push"
 alias proj="cd ~/proj"
 alias pn="pnpm"
 alias n="nvim"
+alias bottom="btm"
 alias e="nvim"
+alias ..="cd .."
+alias ...="cd ../.."
+alias scripts="jq .scripts package.json"
+alias ezsh="nvim $HOME/.zshrc"
+alias reload="source $HOME/.zshrc"
 
 export EDITOR="nvim"
 export BAT_THEME="ansi"
@@ -48,10 +54,6 @@ function klogs() {
 
 function plsown() {
 	sudo chown -R "$USER" "$1"
-}
-
-function reload() {
-	source "$HOME/.zshrc"
 }
 
 function myip() {
