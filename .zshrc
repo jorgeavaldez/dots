@@ -10,7 +10,7 @@ fi
 
 # I like to use 1password to manage my ssh keys
 # Typically i bypass this by restarting the ssh agent manually
-if [[ ! -f "$SSH_AUTH_SOCK" ]]; then
+if [[ ! -f "$SSH_AUTH_SOCK" && "$(uname)" == "Linux" ]]; then
 	export SSH_AUTH_SOCK=~/.1password/agent.sock
 fi
 
@@ -32,11 +32,17 @@ alias ...="cd ../.."
 alias scripts="jq .scripts package.json"
 alias ezsh="nvim $HOME/.zshrc"
 alias reload="source $HOME/.zshrc"
+alias evim="nvim $HOME/.config/nvim/init.lua"
 
 export EDITOR="nvim"
 export BAT_THEME="ansi"
+# export TERM=xterm-256color
+# export CLICOLOR=1
 
 set -o vi
+# on macos i had this
+#set editing-mode vi
+# bindkey "^?" backward-delete-char
 bindkey -v '^?' backward-delete-char
 bindkey -a '^[[3~' delete-char
 
@@ -168,11 +174,11 @@ function draksecret() {
 }
 
 function drakdb() {
-	pgcli postgres://postgres:$(ssmdbval $1 | jq -r .password)@127.0.0.1:5432/drakula
-}
-
-function drakdbp() {
-	pgcli postgres://postgres:$(ssmdbval $1 | jq -r .password)@127.0.0.1:5433/drakula
+	if [[ $1 == "development" ]]; then
+		pgcli postgres://postgres:password@127.0.0.1:5432/drakula_dev
+	else
+		pgcli postgres://postgres:$(ssmdbval $1 | jq -r .password)@127.0.0.1:5432/drakula
+	fi
 }
 
 function pgd() {
@@ -187,24 +193,47 @@ function secret() {
 	op item list --categories 'API Credential' | rg -i $1 | awk '{print $1}' | xargs -n1 op item get --fields credential
 }
 
-export JAVA_HOME="/usr/lib/jvm/java-11-openjdk"
+function branches() {
+	git for-each-ref \
+		--sort=-committerdate \
+		--format="%(color:blue)%(committerdate)%(color:reset) %09 %(color:yellow)%(authorname)%(color:reset) %09 %(color:green)%(refname)%(color:reset)" \
+		--color=always refs/remotes | \
+	rg --color=always "Jorge"
+}
+
+function y() {
+	local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd
+	yazi "$@" --cwd-file="$tmp"
+	if cwd="$(command cat -- "$tmp")" && [ -n "$cwd" ] && [ "$cwd" != "$PWD" ]; then
+		builtin cd -- "$cwd"
+	fi
+	rm -f -- "$tmp"
+}
+
 export ANDROID_HOME="$HOME/Android/Sdk"
 export ANDROID_SDK_ROOT="$HOME/Android/Sdk"
 
 export BUN_INSTALL="$HOME/.bun"
 export FLYCTL_INSTALL="$HOME/.fly"
+export GOPATH="$HOME/proj/go"
 
 if [ -f "$HOME/bin/google-cloud-sdk/path.zsh.inc" ]; then . "$HOME/bin/google-cloud-sdk/path.zsh.inc"; fi
 
 export PATH="${PATH}:${ANDROID_SDK_ROOT}/emulator"
 export PATH="${PATH}:${ANDROID_SDK_ROOT}/platform-tools"
+export PATH="${PATH}:${ANDROID_SDK_ROOT}/tools"
+export PATH="${PATH}:${ANDROID_SDK_ROOT}/tools/bin"
 export PATH="${JAVA_HOME}/bin:${PATH}"
+export PATH="${GOPATH//://bin:}/bin:$PATH"
+export PATH="/usr/local/sbin:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
 export PATH="${PATH}:$HOME/bin"
 export PATH="$HOME/.ebcli-virtual-env/executables:${PATH}"
 export PATH="${PATH}:$HOME/.foundry/bin"
 export PATH="$HOME/.local/share/solana/install/active_release/bin:${PATH}"
 export PATH="$BUN_INSTALL/bin:${PATH}"
 export PATH="$HOME/proj/solidity-one-liners/bin:${PATH}"
+export PATH="$HOME/proj/nimlsp:$PATH"
 export PATH="$HOME/.nimble/bin:${PATH}"
 export PATH="$HOME/.cargo/bin:${PATH}"
 export PATH="$HOME/go/bin:${PATH}"
@@ -216,10 +245,24 @@ case ":$PATH:" in
 *) export PATH="$PNPM_HOME:$PATH" ;;
 esac
 
+. "$HOME/.cargo/env"
+
 export USE_GKE_GCLOUD_AUTH_PLUGIN=True
 export CLOUDSDK_DEVAPPSERVER_PYTHON="/usr/bin/python2"
 
+__git_files () { 
+    _wanted files expl 'local files' _files     
+}
+
 source "$HOME/dots/secrets.sh"
+
+if [ -f /opt/homebrew/bin/brew ]; then eval "$(/opt/homebrew/bin/brew shellenv)"; fi
+if [ -f /usr/local/bin/brew ]; then eval "$(/usr/local/bin/brew shellenv)"; fi
+[ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
+
+if type brew &>/dev/null; then
+	FPATH=$(brew --prefix)/share/zsh-completions:$FPATH
+fi
 
 # this is a vscode plugin for a fuzzy search w/ ripgrep that mimics telescope in neovim
 # unfortunately it doesn't like some of these shell hooks so i disable them to get a faster startup
@@ -235,4 +278,3 @@ autoload -Uz compinit && compinit
 autoload bashcompinit && bashcompinit
 if [ -f "$HOME/bin/google-cloud-sdk/completion.zsh.inc" ]; then . "$HOME/bin/google-cloud-sdk/completion.zsh.inc"; fi
 complete -C '/usr/local/bin/aws_completer' aws
-[ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
