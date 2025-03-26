@@ -186,7 +186,12 @@ function pgd() {
 }
 
 function hpg() {
-	pgcli postgres://postgres:$(op read 'op://Private/Homelab Postgresql/password')@192.168.4.98:5432
+	PGHOST="$(op read 'op://Private/Homelab Postgresql/URL')" \
+	PGPORT=5432 \
+	PGUSER="$(op read 'op://Private/Homelab Postgresql/username')" \
+	PGPASSWORD="$(op read 'op://Private/Homelab Postgresql/password')" \
+	PGCLIENTENCODING=utf8 \
+	pgcli
 }
 
 function secret() {
