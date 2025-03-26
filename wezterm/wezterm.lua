@@ -36,7 +36,7 @@ config.colors = {
 
 -- custom key binds
 config.leader = {
-	key = "'",
+	key = ";",
 	mods = "CTRL",
 	timeout_milliseconds = 1000,
 }
@@ -48,14 +48,35 @@ config.keys = {
 		action = wezterm.action.SpawnTab("CurrentPaneDomain"),
 	},
 	{
-		key = "v",
+		key = "V",
 		mods = "LEADER",
 		action = wezterm.action.SplitVertical,
 	},
 	{
-		key = "h",
+		key = "H",
 		mods = "LEADER",
 		action = wezterm.action.SplitHorizontal,
+	},
+	-- navigate between splits
+	{
+		key = "h",
+		mods = "LEADER",
+		action = wezterm.action.ActivatePaneDirection("Left"),
+	},
+	{
+		key = "j",
+		mods = "LEADER",
+		action = wezterm.action.ActivatePaneDirection("Down"),
+	},
+	{
+		key = "k",
+		mods = "LEADER",
+		action = wezterm.action.ActivatePaneDirection("Up"),
+	},
+	{
+		key = "l",
+		mods = "LEADER",
+		action = wezterm.action.ActivatePaneDirection("Right"),
 	},
 }
 
