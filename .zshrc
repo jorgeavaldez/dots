@@ -186,12 +186,21 @@ function pgd() {
 }
 
 function hpg() {
-	PGHOST="$(op read 'op://Private/Homelab Postgresql/URL')" \
+	PGHOST="$(op read 'op://Private/homelab pgsql/server')" \
 	PGPORT=5432 \
-	PGUSER="$(op read 'op://Private/Homelab Postgresql/username')" \
-	PGPASSWORD="$(op read 'op://Private/Homelab Postgresql/password')" \
+	PGUSER="$(op read 'op://Private/homelab pgsql/username')" \
+	PGPASSWORD="$(op read 'op://Private/homelab pgsql/password')" \
 	PGCLIENTENCODING=utf8 \
 	pgcli
+}
+
+function hpgdump() {
+	PGHOST="$(op read 'op://Private/homelab pgsql/server')" \
+	PGPORT=5432 \
+	PGUSER="$(op read 'op://Private/homelab pgsql/username')" \
+	PGPASSWORD="$(op read 'op://Private/homelab pgsql/password')" \
+	PGCLIENTENCODING=utf8 \
+	pg_dump -Fc -f "$1" "$2"
 }
 
 function secret() {
