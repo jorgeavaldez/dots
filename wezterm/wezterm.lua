@@ -47,14 +47,15 @@ config.keys = {
 		mods = "LEADER",
 		action = wezterm.action.SpawnTab("CurrentPaneDomain"),
 	},
+	-- splits
 	{
-		key = "V",
-		mods = "LEADER",
+		key = "v",
+		mods = "LEADER|CTRL",
 		action = wezterm.action.SplitVertical,
 	},
 	{
-		key = "H",
-		mods = "LEADER",
+		key = "h",
+		mods = "LEADER|CTRL",
 		action = wezterm.action.SplitHorizontal,
 	},
 	-- navigate between splits
