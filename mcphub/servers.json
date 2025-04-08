@@ -1,0 +1,40 @@
+{
+	"mcpServers": {
+		"fetch": {
+			"command": "uvx",
+			"args": ["mcp-server-fetch"]
+		},
+		"time": {
+			"command": "uvx",
+			"args": ["mcp-server-time", "--local-timezone=America/New_York"]
+		},
+		"sequentialthinking": {
+			"command": "mise",
+			"args": [
+				"x",
+				"npm:@modelcontextprotocol/server-sequential-thinking",
+				"--",
+				"mcp-server-sequential-thinking"
+			]
+		},
+		"postgres": {
+			"command": "mise",
+			"args": [
+				"x",
+				"npm:@modelcontextprotocol/server-postgres",
+				"--",
+				"mcp-server-postgres",
+				"postgres://postgres:postgres@127.0.0.1:5432/tenkay"
+			]
+		},
+		"datadog": {
+			"env": {
+				"DD_API_KEY": null,
+				"DD_APP_KEY": null,
+				"DD_SITE": null
+			},
+			"command": "mise",
+			"args": ["x", "npm:datadog-mcp-server", "--", "datadog-mcp-server"]
+		}
+	}
+}
