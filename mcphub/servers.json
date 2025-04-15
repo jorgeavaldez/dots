@@ -35,6 +35,15 @@
 			},
 			"command": "mise",
 			"args": ["x", "npm:datadog-mcp-server", "--", "datadog-mcp-server"]
+		},
+		"context7": {
+			"command": "mise",
+			"args": [
+				"x",
+				"npm:@upstash/context7-mcp",
+				"--",
+				"context7-mcp"
+			]
 		}
 	}
 }
