@@ -38,12 +38,14 @@
 		},
 		"context7": {
 			"command": "mise",
-			"args": [
-				"x",
-				"npm:@upstash/context7-mcp",
-				"--",
-				"context7-mcp"
-			]
+			"args": ["x", "npm:@upstash/context7-mcp", "--", "context7-mcp"]
+		},
+		"linear": {
+			"command": "mise",
+			"args": ["x", "npm:linear-mcp-server", "--", "linear-mcp-server"],
+			"env": {
+				"LINEAR_API_KEY": null
+			}
 		}
 	}
 }

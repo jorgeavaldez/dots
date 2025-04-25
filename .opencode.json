@@ -1,0 +1,18 @@
+{
+  "data": {
+    "directory": ".opencode"
+  },
+  "agents": {
+    "coder": {
+      "model": "gemini-2.5"
+    },
+    "task": {
+      "model": "gemini-2.5-flash"
+    },
+    "title": {
+      "model": "gemini-2.0-flash"
+    }
+  },
+  "debug": false,
+  "debugLSP": false
+}

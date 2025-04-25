@@ -36,6 +36,7 @@ alias evim="nvim $HOME/.config/nvim/init.lua"
 
 export EDITOR="nvim"
 export BAT_THEME="ansi"
+export GOOSE_CLI_THEME="ansi"
 # export TERM=xterm-256color
 # export CLICOLOR=1
 
