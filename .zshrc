@@ -216,6 +216,10 @@ function branches() {
 	rg --color=always "Jorge"
 }
 
+function tellme() {
+	notify-send "hey buddy" "$1"
+}
+
 function y() {
 	local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd
 	yazi "$@" --cwd-file="$tmp"
