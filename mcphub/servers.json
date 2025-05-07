@@ -17,16 +17,6 @@
 				"mcp-server-sequential-thinking"
 			]
 		},
-		"postgres": {
-			"command": "mise",
-			"args": [
-				"x",
-				"npm:@modelcontextprotocol/server-postgres",
-				"--",
-				"mcp-server-postgres",
-				"postgres://postgres:postgres@127.0.0.1:5432/tenkay"
-			]
-		},
 		"datadog": {
 			"env": {
 				"DD_API_KEY": null,
@@ -40,12 +30,5 @@
 			"command": "mise",
 			"args": ["x", "npm:@upstash/context7-mcp", "--", "context7-mcp"]
 		},
-		"linear": {
-			"command": "mise",
-			"args": ["x", "npm:linear-mcp-server", "--", "linear-mcp-server"],
-			"env": {
-				"LINEAR_API_KEY": null
-			}
-		}
 	}
 }
