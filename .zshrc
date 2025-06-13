@@ -33,6 +33,7 @@ alias scripts="jq .scripts package.json"
 alias ezsh="nvim $HOME/.zshrc"
 alias reload="source $HOME/.zshrc"
 alias evim="nvim $HOME/.config/nvim/init.lua"
+alias claude="DEV=false NODE_ENV=production claude"
 
 export EDITOR="nvim"
 export BAT_THEME="ansi"
