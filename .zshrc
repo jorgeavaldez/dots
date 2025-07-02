@@ -265,6 +265,8 @@ case ":$PATH:" in
 *) export PATH="$PNPM_HOME:$PATH" ;;
 esac
 
+if [ -d /opt/homebrew/bin ]; then export PATH="/opt/homebrew/bin:$PATH"; fi
+
 . "$HOME/.cargo/env"
 
 export USE_GKE_GCLOUD_AUTH_PLUGIN=True
