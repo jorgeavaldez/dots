@@ -33,7 +33,6 @@ alias scripts="jq .scripts package.json"
 alias ezsh="nvim $HOME/.zshrc"
 alias reload="source $HOME/.zshrc"
 alias evim="nvim $HOME/.config/nvim/init.lua"
-alias claude="DEV=false NODE_ENV=production claude"
 
 export EDITOR="nvim"
 export BAT_THEME="ansi"
@@ -112,9 +111,11 @@ function rmnodemodules() {
 	find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +
 }
 
-function pbcopy() {
-	xclip -selection clipboard
-}
+if [[ "$(uname)" == "Linux" ]]; then
+	function pbcopy() {
+		xclip -selection clipboard
+	}
+fi
 
 function stprod() {
 	DB_HOST=127.0.0.1 DJANGO_SETTINGS_MODULE=stbackend.settings.production "$@"
