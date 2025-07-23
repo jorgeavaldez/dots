@@ -284,7 +284,7 @@ export PATH="$FLYCTL_INSTALL/bin:$PATH"
 export PATH="${HOME}/dots/scripts:${PATH}"
 
 # opencode
-export PATH="~/.opencode/bin:$PATH"
+export PATH="$HOME/.opencode/bin:$PATH"
 
 export PNPM_HOME="$HOME/.local/share/pnpm"
 case ":$PATH:" in
