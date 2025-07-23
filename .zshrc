@@ -194,7 +194,7 @@ function hpg() {
 	PGUSER="$(op read 'op://Private/homelab pgsql/username')" \
 	PGPASSWORD="$(op read 'op://Private/homelab pgsql/password')" \
 	PGCLIENTENCODING=utf8 \
-	pgcli
+		pgcli
 }
 
 function hpgdump() {
@@ -203,7 +203,7 @@ function hpgdump() {
 	PGUSER="$(op read 'op://Private/homelab pgsql/username')" \
 	PGPASSWORD="$(op read 'op://Private/homelab pgsql/password')" \
 	PGCLIENTENCODING=utf8 \
-	pg_dump -Fc -f "$1" "$2"
+		pg_dump -Fc -f "$1" "$2"
 }
 
 function secret() {
@@ -214,8 +214,8 @@ function branches() {
 	git for-each-ref \
 		--sort=-committerdate \
 		--format="%(color:blue)%(committerdate)%(color:reset) %09 %(color:yellow)%(authorname)%(color:reset) %09 %(color:green)%(refname)%(color:reset)" \
-		--color=always refs/remotes | \
-	rg --color=always "Jorge"
+		--color=always refs/remotes |
+		rg --color=always "Jorge"
 }
 
 function tellme() {
@@ -229,6 +229,28 @@ function y() {
 		builtin cd -- "$cwd"
 	fi
 	rm -f -- "$tmp"
+}
+
+function ktail() {
+	local namespace="$1"
+	if [[ -z "$namespace" ]]; then
+		echo "Usage: ktail <namespace>"
+		return 1
+	fi
+
+	# Ensure we kill all background tails on exit
+	trap 'kill $(jobs -p) 2>/dev/null' SIGINT SIGTERM EXIT
+
+	# Loop over all pod names in the namespace
+	for pod in $(kubectl get pods -n "$namespace" --no-headers \
+		-o custom-columns=":metadata.name"); do
+		local logfile="${pod}.log"
+		echo "Tailing logs for pod '$pod' → $logfile"
+		kubectl logs -n "$namespace" -f "$pod" >"$logfile" 2>&1 &
+	done
+
+	# Wait for all background jobs (the tail processes) to exit
+	wait
 }
 
 export ANDROID_HOME="$HOME/Android/Sdk"
@@ -261,6 +283,9 @@ export PATH="$HOME/go/bin:${PATH}"
 export PATH="$FLYCTL_INSTALL/bin:$PATH"
 export PATH="${HOME}/dots/scripts:${PATH}"
 
+# opencode
+export PATH="~/.opencode/bin:$PATH"
+
 export PNPM_HOME="$HOME/.local/share/pnpm"
 case ":$PATH:" in
 *":$PNPM_HOME:"*) ;;
@@ -268,14 +293,15 @@ case ":$PATH:" in
 esac
 
 if [ -d /opt/homebrew/bin ]; then export PATH="/opt/homebrew/bin:$PATH"; fi
+if [ -d /opt/homebrew/opt/postgresql@17/bin ]; then export PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH"; fi
 
 . "$HOME/.cargo/env"
 
 export USE_GKE_GCLOUD_AUTH_PLUGIN=True
 export CLOUDSDK_DEVAPPSERVER_PYTHON="/usr/bin/python2"
 
-__git_files () { 
-    _wanted files expl 'local files' _files     
+__git_files() {
+	_wanted files expl 'local files' _files
 }
 
 source "$HOME/dots/secrets.sh"
