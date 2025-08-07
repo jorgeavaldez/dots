@@ -17,15 +17,6 @@
 				"mcp-server-sequential-thinking"
 			]
 		},
-		"datadog": {
-			"env": {
-				"DD_API_KEY": null,
-				"DD_APP_KEY": null,
-				"DD_SITE": null
-			},
-			"command": "mise",
-			"args": ["x", "npm:datadog-mcp-server", "--", "datadog-mcp-server"]
-		},
 		"context7": {
 			"command": "mise",
 			"args": ["x", "npm:@upstash/context7-mcp", "--", "context7-mcp"]
