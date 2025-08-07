@@ -253,6 +253,16 @@ function ktail() {
 	wait
 }
 
+function filets() {
+	date +"%Y-%m-%d_%H-%M-%S"
+}
+
+function filewts() {
+	local prefix="$1"
+	local extension="$2"
+	echo "${prefix}_$(filets)${extension}"
+}
+
 export ANDROID_HOME="$HOME/Android/Sdk"
 export ANDROID_SDK_ROOT="$HOME/Android/Sdk"
 
