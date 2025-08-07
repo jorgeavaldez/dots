@@ -282,6 +282,7 @@ export PATH="$HOME/.cargo/bin:${PATH}"
 export PATH="$HOME/go/bin:${PATH}"
 export PATH="$FLYCTL_INSTALL/bin:$PATH"
 export PATH="${HOME}/dots/scripts:${PATH}"
+export PATH="$PATH:/Users/jorge/.lmstudio/bin"
 
 # opencode
 export PATH="$HOME/.opencode/bin:$PATH"
