@@ -37,6 +37,7 @@ alias evim="nvim $HOME/.config/nvim/init.lua"
 export EDITOR="nvim"
 export BAT_THEME="ansi"
 export GOOSE_CLI_THEME="ansi"
+export WF_DB_PATH="$HOME/proj/wf-db/nebari.db"
 # export TERM=xterm-256color
 # export CLICOLOR=1
 
@@ -46,6 +47,10 @@ set -o vi
 # bindkey "^?" backward-delete-char
 bindkey -v '^?' backward-delete-char
 bindkey -a '^[[3~' delete-char
+
+function pwf() {
+	WF_DB_PATH="$HOME/proj/wf-db/personal.db" wf "$@"
+}
 
 function kshell() {
 	kubectl exec -it "$1" -- /bin/bash
