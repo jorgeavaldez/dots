@@ -1,18 +1,24 @@
 {
-  "data": {
-    "directory": ".opencode"
-  },
-  "agents": {
-    "coder": {
-      "model": "gemini-2.5"
-    },
-    "task": {
-      "model": "gemini-2.5-flash"
-    },
-    "title": {
-      "model": "gemini-2.0-flash"
-    }
-  },
-  "debug": false,
-  "debugLSP": false
+	"$schema": "https://opencode.ai/config.json",
+	"theme": "catppuccin",
+	"share": "manual",
+	"permission": {
+		"bash": {
+			"ls": "allow",
+			"git status": "allow",
+			"git worktree": "allow",
+			"git diff": "allow",
+			"git push": "ask",
+			"git commit": "ask",
+			"pwd": "allow",
+			"rg": "allow",
+			"grep": "allow",
+			"make": "allow",
+			"uv": "ask",
+			"ruff": "allow",
+			"pyright": "allow",
+			"wf": "allow",
+			"*": "ask"
+		}
+	}
 }
