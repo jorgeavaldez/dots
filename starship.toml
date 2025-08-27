@@ -10,3 +10,7 @@ disabled = true
 disabled = true
 
 command_timeout = 1000
+
+[terraform]
+format = "via [$symbol$workspace]($style) "
+disabled = false
