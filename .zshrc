@@ -344,3 +344,4 @@ autoload -Uz compinit && compinit
 autoload bashcompinit && bashcompinit
 if [ -f "$HOME/bin/google-cloud-sdk/completion.zsh.inc" ]; then . "$HOME/bin/google-cloud-sdk/completion.zsh.inc"; fi
 complete -C '/usr/local/bin/aws_completer' aws
+complete -o nospace -C terraform terraform
