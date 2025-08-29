@@ -18,7 +18,23 @@
 			"ruff": "allow",
 			"pyright": "allow",
 			"wf": "allow",
-			"*": "ask"
+
+			"cd*ls*": "allow",
+			"cd*git status": "allow",
+			"cd*git worktree": "allow",
+			"cd*git diff*": "allow",
+			"git diff*": "allow",
+			"cd*git push": "ask",
+			"cd*git commit": "ask",
+			"cd*pwd": "allow",
+			"cd*rg*": "allow",
+			"cd*grep*": "allow",
+			"cd*make*": "allow",
+			"cd*uv*": "ask",
+			"cd*find*": "ask",
+			"cd*ruff*": "allow",
+			"cd*pyright*": "allow",
+			"cd*wf*": "allow"
 		}
 	}
 }
