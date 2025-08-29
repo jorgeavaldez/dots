@@ -268,6 +268,17 @@ function filewts() {
 	echo "${prefix}_$(filets)${extension}"
 }
 
+function packagejsoncontains() {
+	jq -r "
+		[\"dependencies\", \"devDependencies\", \"peerDependencies\", \"optionalDependencies\", \"bundledDependencies\"] as \$sections |
+		\$sections[] as \$section |
+		select(has(\$section)) |
+		.[\$section] | to_entries[] |
+		select(.key | contains(\"${1}\")) |
+		\"\(\$section): \(.key) = \(.value)\"
+	" package.json
+}
+
 export ANDROID_HOME="$HOME/Android/Sdk"
 export ANDROID_SDK_ROOT="$HOME/Android/Sdk"
 
