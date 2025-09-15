@@ -4,22 +4,20 @@
 			"command": "uvx",
 			"args": ["mcp-server-fetch"]
 		},
-		"time": {
-			"command": "uvx",
-			"args": ["mcp-server-time", "--local-timezone=America/New_York"]
-		},
-		"sequentialthinking": {
-			"command": "mise",
-			"args": [
-				"x",
-				"npm:@modelcontextprotocol/server-sequential-thinking",
-				"--",
-				"mcp-server-sequential-thinking"
-			]
-		},
 		"context7": {
 			"command": "mise",
 			"args": ["x", "npm:@upstash/context7-mcp", "--", "context7-mcp"]
+		},
+		"playwright": {
+			"type": "stdio",
+			"command": "mise",
+			"args": [
+				"x",
+				"npm:@playwright/mcp@latest",
+				"--",
+				"mcp-server-playwright"
+			],
+			"env": {}
 		}
 	}
 }
