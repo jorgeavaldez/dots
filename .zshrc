@@ -1,3 +1,5 @@
+# zmodload zsh/zprof
+
 # Source manjaro-zsh-configuration
 if [[ -e /usr/share/zsh/manjaro-zsh-config ]]; then
 	source /usr/share/zsh/manjaro-zsh-config
@@ -33,6 +35,7 @@ alias scripts="jq .scripts package.json"
 alias ezsh="nvim $HOME/.zshrc"
 alias reload="source $HOME/.zshrc"
 alias evim="nvim $HOME/.config/nvim/init.lua"
+alias "nenv"="ENV=\${ENV:-local} op run --env-file=$(dirname "${(%):-%x}")/local.env --no-masking -- "
 
 export EDITOR="nvim"
 export BAT_THEME="ansi"
@@ -279,6 +282,10 @@ function packagejsoncontains() {
 	" package.json
 }
 
+function fix-dashes() {
+  find "${1:-.}" -type f -exec perl -i -pe 's/\x{2014}/-/g; s/—/-/g; s/\xe2\x80\x91/-/g; s/\x{2011}/-/g' {} +
+}
+
 export ANDROID_HOME="$HOME/Android/Sdk"
 export ANDROID_SDK_ROOT="$HOME/Android/Sdk"
 
@@ -356,3 +363,5 @@ autoload bashcompinit && bashcompinit
 if [ -f "$HOME/bin/google-cloud-sdk/completion.zsh.inc" ]; then . "$HOME/bin/google-cloud-sdk/completion.zsh.inc"; fi
 complete -C '/usr/local/bin/aws_completer' aws
 complete -o nospace -C terraform terraform
+
+# zprof
