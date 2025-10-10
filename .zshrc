@@ -282,8 +282,8 @@ function packagejsoncontains() {
 	" package.json
 }
 
-function fix-dashes() {
-  find "${1:-.}" -type f -exec perl -i -pe 's/\x{2014}/-/g; s/—/-/g; s/\xe2\x80\x91/-/g; s/\x{2011}/-/g' {} +
+function fix-slop() {
+  find "${1:-.}" -type f -exec perl -i -pe 's/\x{2014}/-/g; s/—/-/g; s/\xe2\x80\x91/-/g; s/\x{2011}/-/g; s/\xe2\x80\x99/'\''/g; s/\x{2019}/'\''/g' {} +
 }
 
 export ANDROID_HOME="$HOME/Android/Sdk"
