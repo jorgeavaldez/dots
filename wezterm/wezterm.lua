@@ -16,23 +16,8 @@ end
 config.font = wezterm.font("JetBrains Mono")
 config.font_size = 13
 config.max_fps = 120
-
 config.use_fancy_tab_bar = false
-
--- idk if i want the top buttons yet since it looks cleaner with full screen term window in vscode
--- config.window_decorations = "INTEGRATED_BUTTONS|RESIZE";
 config.window_decorations = "RESIZE"
--- config.window_frame = { border_top_height = "0.5cell" }
-
---[[
-config.colors = {
-    tab_bar = {
-        -- this is to match the oxocarbon dark color since otherwise it looks weird with the top buttons
-        -- https://github.com/nyoom-engineering/base16-oxocarbon/tree/f6944a9536b1e2f2879a32e49b104b2b4c09dfe0
-        background = "#161616",
-    },
-};
---]]
 
 -- custom key binds
 config.leader = {
@@ -40,6 +25,14 @@ config.leader = {
 	mods = "CTRL",
 	timeout_milliseconds = 1000,
 }
+
+wezterm.on('update-right-status', function(window, pane)
+	local name = window:active_key_table()
+	if name then
+		name = 'TABLE: ' .. name
+	end
+	window:set_right_status(name or '')
+end)
 
 config.keys = {
 	{
@@ -79,6 +72,38 @@ config.keys = {
 		mods = "LEADER",
 		action = wezterm.action.ActivatePaneDirection("Right"),
 	},
+	-- scroll
+	{
+		key = "J",
+		mods = "LEADER",
+		action = wezterm.action.ActivateKeyTable {
+			name = "scroll_mode",
+			timeout_milliseconds = 1000,
+			one_shot = false,
+		},
+	},
+	{
+		key = "K",
+		mods = "LEADER",
+		action = wezterm.action.ActivateKeyTable {
+			name = "scroll_mode",
+			one_shot = false,
+		},
+	},
+}
+
+config.key_tables = {
+	scroll_mode = {
+		{
+			key = "J",
+			action = wezterm.action.ScrollByLine(1),
+		},
+		{
+			key = "K",
+			action = wezterm.action.ScrollByLine(-1),
+		},
+		{ key = 'Escape', action = 'PopKeyTable' },
+	}
 }
 
 return config
