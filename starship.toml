@@ -14,3 +14,9 @@ command_timeout = 1000
 [terraform]
 format = "via [$symbol$workspace]($style) "
 disabled = false
+
+[kubernetes]
+format = 'on [$symbol$context]($style) '
+disabled = false
+symbol = "☸ "
+style = "cyan bold"
