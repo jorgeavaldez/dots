@@ -324,6 +324,15 @@ function pg2md() {
     ' "${1:--}"
 }
 
+function dswf() {
+    datasette "$WF_DB_PATH"
+}
+
+function podshell() {
+    POD=$(kubectl -n temporal get pods -l app=temporal-worker -o jsonpath='{.items[0].metadata.name}')
+    kubectl -n temporal exec -it $POD -c temporal-worker -- bash
+}
+
 export ANDROID_HOME="$HOME/Android/Sdk"
 export ANDROID_SDK_ROOT="$HOME/Android/Sdk"
 
