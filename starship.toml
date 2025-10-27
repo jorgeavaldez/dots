@@ -17,6 +17,6 @@ disabled = false
 
 [kubernetes]
 format = 'on [$symbol$context]($style) '
-disabled = false
+disabled = true
 symbol = "☸ "
 style = "cyan bold"

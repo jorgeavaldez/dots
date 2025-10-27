@@ -380,6 +380,7 @@ if [ -d /opt/homebrew/opt/postgresql@17/bin ]; then export PATH="/opt/homebrew/o
 
 export USE_GKE_GCLOUD_AUTH_PLUGIN=True
 export CLOUDSDK_DEVAPPSERVER_PYTHON="/usr/bin/python2"
+export CLAUDE_CODE_MAX_OUTPUT_TOKENS=64000
 
 __git_files() {
     _wanted files expl 'local files' _files
