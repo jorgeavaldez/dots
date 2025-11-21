@@ -3,6 +3,15 @@
 	"theme": "catppuccin",
 	"share": "manual",
 	"small_model": "anthropic/claude-haiku-4-5",
+	"keybinds": {
+		"messages_half_page_down": "<leader>j",
+		"messages_half_page_up": "<leader>k"
+	},
+	"tui": {
+		"scroll_acceleration": {
+			"enabled": true
+		}
+	},
 	"permission": {
 		"bash": {
 			"ls": "allow",
