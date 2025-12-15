@@ -17,6 +17,27 @@ if [[ ! -f "$SSH_AUTH_SOCK" && "$(uname)" == "Linux" ]]; then
 fi
 
 # aliases
+function notify() {
+    local title="Notification"
+    local body=""
+
+    if [[ $# -eq 1 ]]; then
+        # One parameter: treat as body with default title
+        body="$1"
+    elif [[ $# -eq 2 ]]; then
+        # Two parameters: title and body
+        title="$1"
+        body="$2"
+    else
+        # No parameters or too many: show usage
+        echo "Usage: notify [title] body"
+        echo "Example: notify 'Task Complete' 'Your command finished successfully!'"
+        echo "  or:  notify 'Your command finished successfully!'"
+        return 1
+    fi
+
+    printf "\e]777;notify;%s;%s\e\\" "$title" "$body"
+}
 alias l="eza -l -a -h"
 alias c="clear"
 alias dco="docker compose"

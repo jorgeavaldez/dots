@@ -18,6 +18,7 @@ config.font_size = 13
 config.max_fps = 120
 config.use_fancy_tab_bar = false
 config.window_decorations = "RESIZE"
+config.notification_handling = "AlwaysShow"
 
 -- custom key binds
 config.leader = {
