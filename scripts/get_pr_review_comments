@@ -166,11 +166,11 @@ main() {
     trap "rm -rf '$temp_dir'" EXIT
     
     # Fetch unresolved comments from graphite-app[bot] using GraphQL API
-    log_info "Fetching unresolved comments from graphite-app[bot]..."
+    log_info "Fetching unresolved comments from graphite-app[bot] and chatgpt-codex-connector[bot]..."
     local comments_json="$temp_dir/comments.json"
     
     if ! gh api graphql -f query='{ repository(owner: "'"$repo_owner"'", name: "'"$repo_name"'") { pullRequest(number: '$pr_number') { reviewThreads(first: 100) { edges { node { id isResolved comments(first: 10) { edges { node { id body path line author { login } createdAt } } } } } } } } }' \
-        --jq '.data.repository.pullRequest.reviewThreads.edges[] | select(.node.isResolved == false and .node.comments.edges[0].node.author.login == "graphite-app") | .node.comments.edges[0].node | {id: .id, body: .body, path: .path, line: .line, created_at: .createdAt}' \
+        --jq '.data.repository.pullRequest.reviewThreads.edges[] | select(.node.isResolved == false and (.node.comments.edges[0].node.author.login == "graphite-app" or .node.comments.edges[0].node.author.login == "chatgpt-codex-connector")) | .node.comments.edges[0].node | {id: .id, body: .body, path: .path, line: .line, created_at: .createdAt}' \
         > "$comments_json"; then
         log_error "Failed to fetch PR comments"
         exit 1
