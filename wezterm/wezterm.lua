@@ -20,6 +20,9 @@ config.use_fancy_tab_bar = false
 config.window_decorations = "RESIZE"
 config.notification_handling = "AlwaysShow"
 
+-- required by pi https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent#terminal-setup
+config.enable_kitty_keyboard = true
+
 -- custom key binds
 config.leader = {
 	key = ";",
