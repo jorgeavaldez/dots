@@ -30,6 +30,32 @@ config.leader = {
 	timeout_milliseconds = 1000,
 }
 
+local function basename(path)
+	if not path then
+		return nil
+	end
+
+	return path:gsub("(.*[/\\])", "")
+end
+
+local function title_from_pane(pane, tab_index)
+	local process = basename(pane:get_foreground_process_name())
+	if process and process ~= "" then
+		return process
+	end
+
+	local title = pane:get_title()
+	if title and title ~= "" then
+		return title
+	end
+
+	return "Tab " .. (tab_index + 1)
+end
+
+wezterm.on("format-tab-title", function(tab)
+	return title_from_pane(tab.active_pane, tab.tab_index)
+end)
+
 wezterm.on('update-right-status', function(window, pane)
 	local name = window:active_key_table()
 	if name then
