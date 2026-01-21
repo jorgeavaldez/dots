@@ -1,0 +1,33 @@
+[tools]
+bun = "latest"
+deno = "latest"
+elixir = "latest"
+erlang = "latest"
+go = "latest"
+java = "latest"
+lua = "latest"
+node = "latest"
+"npm:@biomejs/biome" = "latest"
+"npm:mcp-hub" = "4.2.0"
+"npm:@anthropic-ai/claude-code" = "latest"
+python = "latest"
+rust = "latest"
+uv = "latest"
+"npm:@google/gemini-cli" = "latest"
+"npm:ccusage" = "latest"
+"npm:@sourcegraph/amp" = "latest"
+"npm:@forge/cli" = "latest"
+"npm:@mermaid-js/mermaid-cli" = "latest"
+"npm:@openai/codex" = "latest"
+yamlfmt = "latest"
+yq = "latest"
+television = "latest"
+"npm:@mariozechner/pi-coding-agent" = "latest"
+tmux = "latest"
+pitchfork = "latest"
+
+[settings]
+idiomatic_version_file_enable_tools = []
+experimental = true
+
+[env]
