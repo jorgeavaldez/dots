@@ -1,0 +1,62 @@
+#!/bin/bash
+# vim: set filetype=bash:
+
+# psql_to_markdown.sh - Convert psql table output to markdown table format
+# Usage: ./psql_to_markdown.sh < input.txt > output.md
+# Or: psql -c "SELECT * FROM table;" | ./psql_to_markdown.sh
+
+# Read all input
+input=$(cat)
+
+# Process the input
+echo "$input" | awk '
+BEGIN {
+    # Track if we are in the header section
+    in_header = 1
+    header_printed = 0
+}
+
+# Skip separator lines with just + and -
+/^[ +-]+$/ {
+    if (in_header && !header_printed) {
+        # This is the header separator, we will print our own
+        header_printed = 1
+    }
+    next
+}
+
+# Skip row count lines like "(18 rows)"
+/^\([0-9]+ rows?\)$/ {
+    next
+}
+
+# Process data rows
+!/^[ +-]+$/ && NF > 0 {
+    # Remove leading and trailing whitespace
+    gsub(/^[ \t]+|[ \t]+$/, "")
+    
+    # Split by | and process each field
+    n = split($0, fields, /\|/)
+    
+    # Build the markdown row
+    row = "|"
+    for (i = 1; i <= n; i++) {
+        # Trim whitespace from each field
+        gsub(/^[ \t]+|[ \t]+$/, "", fields[i])
+        row = row " " fields[i] " |"
+    }
+    
+    print row
+    
+    # If this was the header row, print the separator
+    if (in_header && !header_printed) {
+        separator = "|"
+        for (i = 1; i <= n; i++) {
+            separator = separator "-----------|"
+        }
+        print separator
+        header_printed = 1
+        in_header = 0
+    }
+}
+'
