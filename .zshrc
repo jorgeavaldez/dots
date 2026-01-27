@@ -392,6 +392,7 @@ export PATH="$PATH:/Users/jorge/.lmstudio/bin"
 
 # opencode
 export PATH="$HOME/.opencode/bin:$PATH"
+export PATH="$HOME/.claude/local:$PATH"
 
 export PNPM_HOME="$HOME/.local/share/pnpm"
 case ":$PATH:" in
