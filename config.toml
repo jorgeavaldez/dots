@@ -25,6 +25,8 @@ television = "latest"
 "npm:@mariozechner/pi-coding-agent" = "latest"
 tmux = "latest"
 pitchfork = "latest"
+"aqua:cli/cli" = "2.75.0"
+"npm:@steipete/summarize" = "latest"
 
 [settings]
 idiomatic_version_file_enable_tools = []
