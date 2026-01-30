@@ -27,6 +27,7 @@ tmux = "latest"
 pitchfork = "latest"
 "aqua:cli/cli" = "2.75.0"
 "npm:@steipete/summarize" = "latest"
+"npm:prettier" = "latest"
 
 [settings]
 idiomatic_version_file_enable_tools = []
