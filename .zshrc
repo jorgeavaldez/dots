@@ -171,6 +171,13 @@ if [[ "$(uname)" == "Linux" ]]; then
     }
 fi
 
+# Colima/Testcontainers configuration for macOS
+if [[ "$(uname)" == "Darwin" ]] && colima status &>/dev/null; then
+    export TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock
+    export TESTCONTAINERS_HOST_OVERRIDE=$(colima ls -j | jq -r '.address')
+    export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"
+fi
+
 function stprod() {
     DB_HOST=127.0.0.1 DJANGO_SETTINGS_MODULE=stbackend.settings.production "$@"
 }
