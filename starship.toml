@@ -20,3 +20,25 @@ format = 'on [$symbol$context]($style) '
 disabled = true
 symbol = "☸ "
 style = "cyan bold"
+
+# Disable built-in git modules (jj-starship handles both jj and git repos)
+[git_branch]
+disabled = true
+
+[git_status]
+disabled = true
+
+[git_commit]
+disabled = true
+
+[git_state]
+disabled = true
+
+[git_metrics]
+disabled = true
+
+# jj-starship: unified prompt for jj and git repos
+[custom.jj]
+when = "jj-starship detect"
+shell = ["jj-starship"]
+format = "$output"

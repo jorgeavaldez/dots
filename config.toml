@@ -30,6 +30,7 @@ pitchfork = "latest"
 "npm:prettier" = "latest"
 fd = "latest"
 jj = "latest"
+"cargo:jj-starship" = "latest"
 
 [settings]
 idiomatic_version_file_enable_tools = []
