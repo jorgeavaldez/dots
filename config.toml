@@ -29,6 +29,7 @@ pitchfork = "latest"
 "npm:@steipete/summarize" = "latest"
 "npm:prettier" = "latest"
 fd = "latest"
+jj = "latest"
 
 [settings]
 idiomatic_version_file_enable_tools = []
