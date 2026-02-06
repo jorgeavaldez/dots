@@ -50,16 +50,38 @@ alias gtpr="gtsubmit --publish"
 alias gtprm="gtsubmit --publish -m"
 
 # get bookmark names compatible w/ git
-alias currbm="jj bookmark list -r \"latest(bookmarks() & trunk()..@)\""
-alias currbmname="jj bookmark list -r \"latest(bookmarks() & trunk()..@)\" -T 'name'"
-alias parentbm="jj bookmark list -r \"latest(bookmarks() & trunk()..@-)\""
-alias parentbmname="jj bookmark list -r \"latest(bookmarks() & trunk()..@-)\" -T 'name'"
+function currbm() {
+    jj bookmark list -r "latest(bookmarks() & trunk()..@)"
+}
+
+function currbmname() {
+    jj bookmark list -r "latest(bookmarks() & trunk()..@)" -T 'name'
+}
+
+function parentbm() {
+    jj bookmark list -r "latest(bookmarks() & trunk()..@-)"
+}
+
+function parentbmname() {
+    jj bookmark list -r "latest(bookmarks() & trunk()..@-)" -T 'name'
+}
 
 # use gt w/ jj bookmarks
-alias gttrack="gt track --branch currbmname -p parentbmname"
-alias draft="gtdraft --branch currbmname"
-alias pr="gtsubmit --publish --branch currbmname"
-alias prm="gtsubmit --publish -m --branch currbmname"
+function gttrack() {
+    gt track --branch "$(currbmname)" -p "$(parentbmname)"
+}
+
+function draft() {
+    gt submit --cli --ai --no-edit-description --no-edit-title --draft --branch "$(currbmname)"
+}
+
+function pr() {
+    gt submit --cli --ai --no-edit-description --no-edit-title --publish --branch "$(currbmname)"
+}
+
+function prm() {
+    gt submit --cli --ai --no-edit-description --no-edit-title --publish -m --branch "$(currbmname)"
+}
 
 # jj
 alias psh="jj git push"
@@ -70,7 +92,7 @@ alias nearestparent="jj log -r 'heads(first_ancestors(@) & ~empty())'"
 # 'heads((first_ancestors(@) ~ @) & ~empty())'
 
 function bump() {
-    jj bookmark move $(currbmname) -t @-
+    jj bookmark move "$(currbmname)" -t @-
 }
 
 alias proj="cd ~/proj"
