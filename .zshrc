@@ -51,19 +51,19 @@ alias gtprm="gtsubmit --publish -m"
 
 # get bookmark names compatible w/ git
 function currbm() {
-    jj bookmark list -r "latest(bookmarks() & trunk()..@)"
+    jj bookmark list -r "latest(bookmarks() & trunk()-..@)"
 }
 
 function currbmname() {
-    jj bookmark list -r "latest(bookmarks() & trunk()..@)" -T 'name'
+    jj bookmark list -r "latest(bookmarks() & trunk()-..@)" -T 'name'
 }
 
 function parentbm() {
-    jj bookmark list -r "latest(bookmarks() & trunk()..@-)"
+    jj bookmark list -r "latest(bookmarks() & trunk()-..@-)"
 }
 
 function parentbmname() {
-    jj bookmark list -r "latest(bookmarks() & trunk()..@-)" -T 'name'
+    jj bookmark list -r "latest(bookmarks() & trunk()-..@-)" -T 'name'
 }
 
 # use gt w/ jj bookmarks
