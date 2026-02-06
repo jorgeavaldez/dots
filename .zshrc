@@ -38,17 +38,29 @@ function notify() {
 
     printf "\e]777;notify;%s;%s\e\\" "$title" "$body"
 }
+
 alias l="eza -l -a -h"
 alias c="clear"
 alias dco="docker compose"
-alias add="git add"
-alias commit="git commit -m"
-alias branch="git checkout -b"
-alias psh="git push"
-alias create="gt create -m"
-alias draft="gt submit --cli --ai --draft --no-edit-description --no-edit-title"
-alias pr="gt submit --cli --ai --publish --no-edit-description --no-edit-title"
-alias prm="gt submit --cli --ai --publish --no-edit-description --no-edit-title -m"
+
+# aliases for graphite stuff
+alias gtsubmit="gt submit --cli --ai --no-edit-description --no-edit-title"
+alias gtdraft="gtsubmit --draft"
+alias gtpr="gtsubmit --publish"
+alias gtprm="gtsubmit --publish -m"
+
+# get bookmark names compatible w/ git
+alias currbm="jj bookmark list -r \"latest(bookmarks() & trunk()..@)\""
+alias currbmname="jj bookmark list -r \"latest(bookmarks() & trunk()..@)\" -T 'name'"
+alias parentbm="jj bookmark list -r \"latest(bookmarks() & trunk()..@-)\""
+alias parentbmname="jj bookmark list -r \"latest(bookmarks() & trunk()..@-)\" -T 'name'"
+
+# use gt w/ jj bookmarks
+alias gttrack="gt track --branch currbmname -p parentbmname"
+alias draft="gtdraft --branch currbmname"
+alias pr="gtsubmit --publish --branch currbmname"
+alias prm="gtsubmit --publish -m --branch currbmname"
+
 alias proj="cd ~/proj"
 alias pn="pnpm"
 alias n="nvim"
@@ -440,6 +452,7 @@ if [[ $FIND_IT_FASTER_ACTIVE -eq 0 ]]; then
 fi
 
 # completions
+fpath=(~/.zsh/completions $fpath)
 autoload -Uz compinit && compinit
 autoload bashcompinit && bashcompinit
 if [ -f "$HOME/bin/google-cloud-sdk/completion.zsh.inc" ]; then . "$HOME/bin/google-cloud-sdk/completion.zsh.inc"; fi
