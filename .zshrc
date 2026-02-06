@@ -92,6 +92,7 @@ function prm() {
 
 # jj
 alias psh="jj git push"
+alias commit="jj commit"
 
 # first non empty parent commit
 alias nearestparent="jj log -r 'heads(first_ancestors(@) & ~empty())'"
