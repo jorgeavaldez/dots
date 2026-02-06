@@ -10,4 +10,4 @@ diff-formatter = ":git"
 diff-editor = ["nvim", "-c", "DiffEditor $left $right $output"]
 
 [git]
-private-commits = 'description(glob:"private:*")'
+private-commits = '''description('private:*')'''
