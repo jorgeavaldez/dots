@@ -8,3 +8,6 @@ email = "jorge@yung.dev"
 pager = ["delta", "--pager", "less -FRX"]
 diff-formatter = ":git"
 diff-editor = ["nvim", "-c", "DiffEditor $left $right $output"]
+
+[git]
+private-commits = 'description(glob:"private:*")'
