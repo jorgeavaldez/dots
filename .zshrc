@@ -63,7 +63,15 @@ alias prm="gtsubmit --publish -m --branch currbmname"
 
 # jj
 alias psh="jj git push"
-# alias bump="jj bookmark move "
+
+# first non empty parent commit
+alias nearestparent="jj log -r 'heads(first_ancestors(@) & ~empty())'"
+# exclude head like this, negate @
+# 'heads((first_ancestors(@) ~ @) & ~empty())'
+
+function bump() {
+    jj bookmark move $(currbmname) -t @-
+}
 
 alias proj="cd ~/proj"
 alias pn="pnpm"
