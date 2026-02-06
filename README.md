@@ -25,3 +25,25 @@ This will symlink:
 - `config.toml` → `~/.config/mise/config.toml`
 - `jj/config.toml` → `~/.config/jj/config.toml`
 - `git/config` → `~/.gitconfig`
+
+## shell formatting
+
+Shell files are formatted with `shfmt` (installed via `mise`).
+
+```bash
+make format
+```
+
+Check formatting without modifying files:
+
+```bash
+make lint
+# or
+make check
+```
+
+See which files are included:
+
+```bash
+make shell-files
+```
