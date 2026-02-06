@@ -1,9 +1,9 @@
 #!/bin/bash
 # vim: set filetype=bash:
 
-# psql_to_markdown.sh - Convert psql table output to markdown table format
-# Usage: ./psql_to_markdown.sh < input.txt > output.md
-# Or: psql -c "SELECT * FROM table;" | ./psql_to_markdown.sh
+# psql_to_markdown - Convert psql table output to markdown table format
+# Usage: ./psql_to_markdown < input.txt > output.md
+# Or: psql -c "SELECT * FROM table;" | ./psql_to_markdown
 
 # Read all input
 input=$(cat)
