@@ -61,6 +61,10 @@ alias draft="gtdraft --branch currbmname"
 alias pr="gtsubmit --publish --branch currbmname"
 alias prm="gtsubmit --publish -m --branch currbmname"
 
+# jj
+alias psh="jj git push"
+# alias bump="jj bookmark move "
+
 alias proj="cd ~/proj"
 alias pn="pnpm"
 alias n="nvim"
