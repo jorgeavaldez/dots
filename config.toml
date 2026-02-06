@@ -8,7 +8,7 @@ java = "latest"
 lua = "latest"
 node = "latest"
 "npm:@biomejs/biome" = "latest"
-"npm:mcp-hub" = "4.2.0"
+"npm:mcp-hub" = "latest"
 "npm:@anthropic-ai/claude-code" = "latest"
 python = "latest"
 rust = "latest"
@@ -31,9 +31,19 @@ pitchfork = "latest"
 fd = "latest"
 jj = "latest"
 "cargo:jj-starship" = "latest"
+1password-cli = "latest"
+zig = "latest"
+zls = "latest"
+"aqua:JohnnyMorganz/StyLua" = "latest"
+"pipx:pre-commit" = "latest"
+"cargo:qsv" = "latest"
 
 [settings]
-idiomatic_version_file_enable_tools = []
+idiomatic_version_file_enable_tools = ["python"]
 experimental = true
 
-[env]
+[settings.python]
+uv_venv_auto = "source"
+
+[settings.pipx]
+uvx = true
