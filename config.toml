@@ -9,7 +9,6 @@ lua = "latest"
 node = "latest"
 "npm:@biomejs/biome" = "latest"
 "npm:mcp-hub" = "latest"
-"npm:@anthropic-ai/claude-code" = "latest"
 python = "latest"
 rust = "latest"
 uv = "latest"
@@ -37,6 +36,7 @@ zls = "latest"
 "aqua:JohnnyMorganz/StyLua" = "latest"
 "pipx:pre-commit" = "latest"
 "cargo:qsv" = "latest"
+claude-code = "latest"
 
 [settings]
 idiomatic_version_file_enable_tools = ["python"]
