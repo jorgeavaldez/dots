@@ -18,3 +18,4 @@ This will symlink:
 - `wezterm/` → `~/.config/wezterm`
 - `config.toml` → `~/.config/mise/config.toml`
 - `jj/config.toml` → `~/.config/jj/config.toml`
+- `git/config` → `~/.gitconfig`
