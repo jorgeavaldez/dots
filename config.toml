@@ -37,6 +37,7 @@ zls = "latest"
 "pipx:pre-commit" = "latest"
 "cargo:qsv" = "latest"
 claude-code = "latest"
+shfmt = "latest"
 
 [settings]
 idiomatic_version_file_enable_tools = ["python"]
