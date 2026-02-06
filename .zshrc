@@ -50,8 +50,6 @@ alias gtpr="gtsubmit --publish"
 alias gtprm="gtsubmit --publish -m"
 
 CURR_BOOKMARK_QUERY="latest(bookmarks() & trunk()-..@)"
-# this excludes the head commit
-PARENT_BOOKMARK_QUERY="latest(bookmarks() & trunk()-..@-)"
 NON_REMOTE_BOOKMARK_FORMAT='if(remote, "", name)'
 
 # get bookmark names compatible w/ git
@@ -63,18 +61,24 @@ function currbmname() {
     jj bookmark list -r $CURR_BOOKMARK_QUERY -T $NON_REMOTE_BOOKMARK_FORMAT
 }
 
+function get_parent_bm_query() {
+    echo "latest(bookmarks() & trunk()-..$(currbmname)-)"
+}
+
 function parentbm() {
-    jj bookmark list -r $PARENT_BOOKMARK_QUERY
+    jj bookmark list -r "$(get_parent_bm_query)"
 }
 
 function parentbmname() {
-    jj bookmark list -r $PARENT_BOOKMARK_QUERY -T $NON_REMOTE_BOOKMARK_FORMAT
+    jj bookmark list -r "$(get_parent_bm_query)" -T $NON_REMOTE_BOOKMARK_FORMAT
 }
 
 # use gt w/ jj bookmarks
 function gttrack() {
     gt track --branch "$(currbmname)" -p "$(parentbmname)"
 }
+
+alias track="gttrack"
 
 alias gtsubmit="gt submit --cli --ai --no-edit-description --no-edit-title"
 
