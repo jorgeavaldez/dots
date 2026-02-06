@@ -17,3 +17,4 @@ This will symlink:
 - `starship.toml` → `~/.config/starship.toml`
 - `wezterm/` → `~/.config/wezterm`
 - `config.toml` → `~/.config/mise/config.toml`
+- `jj/config.toml` → `~/.config/jj/config.toml`
