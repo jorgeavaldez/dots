@@ -73,12 +73,16 @@ function parentbmname() {
     jj bookmark list -r "$(get_parent_bm_query)" -T $NON_REMOTE_BOOKMARK_FORMAT
 }
 
+function jjtrack() {
+    jj bookmark track "$(currbmname)" --remote=origin
+}
+
+alias track="jjtrack"
+
 # use gt w/ jj bookmarks
 function gttrack() {
     gt track --branch "$(currbmname)" -p "$(parentbmname)"
 }
-
-alias track="gttrack"
 
 alias gtsubmit="gt submit --cli --ai --no-edit-description --no-edit-title"
 
