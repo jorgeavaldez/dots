@@ -8,6 +8,16 @@ email = "jorge@yung.dev"
 pager = ["delta", "--pager", "less -FRX"]
 diff-formatter = ":git"
 diff-editor = ["nvim", "-c", "DiffEditor $left $right $output"]
+merge-editor = "diffconflicts"
+
+[merge-tools.diffconflicts]
+program = "nvim"
+merge-args = [
+  "-c", "let g:jj_diffconflicts_marker_length=$marker_length",
+  "-c", "JJDiffConflicts!",
+  "$output", "$base", "$left", "$right",
+]
+merge-tool-edits-conflict-markers = true
 
 [git]
 private-commits = '''description('private:*')'''
