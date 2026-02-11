@@ -9,6 +9,7 @@ pager = ["delta", "--pager", "less -FRX"]
 diff-formatter = ":git"
 diff-editor = ["nvim", "-c", "DiffEditor $left $right $output"]
 merge-editor = "diffconflicts"
+default-command = "log"
 
 [merge-tools.diffconflicts]
 program = "nvim"
