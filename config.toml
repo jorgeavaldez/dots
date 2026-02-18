@@ -38,6 +38,7 @@ zls = "latest"
 "cargo:qsv" = "latest"
 claude-code = "latest"
 shfmt = "latest"
+cmake = "latest"
 
 [settings]
 idiomatic_version_file_enable_tools = ["python"]
