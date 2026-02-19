@@ -10,6 +10,8 @@ diff-formatter = ":git"
 diff-editor = ["nvim", "-c", "DiffEditor $left $right $output"]
 merge-editor = "diffconflicts"
 default-command = "log"
+bookmark-list-sort-keys = ["author-date-"]
+tag-list-sort-keys = ["author-date-"]
 
 [merge-tools.diffconflicts]
 program = "nvim"
@@ -22,3 +24,25 @@ merge-tool-edits-conflict-markers = true
 
 [git]
 private-commits = '''description('private:*')'''
+
+[aliases]
+remote-recents = ["b", "l", "--remote", "origin", "-T", "bookmarks_remote_recent"]
+branches-only = ["log", "-r", "bookmarks() | fork_point(bookmarks()) | @"]
+
+[template-aliases]
+'signature_timestamp(signature)' = 'signature.timestamp().local()'
+'format_commit_signature(signature)' = 'signature ++ " (" ++ signature_timestamp(signature) ++ ")"'
+
+'bookmarks_remote_recent' = '''
+if(
+    self.remote()
+    && self.normal_target()
+    && self.normal_target().author().timestamp().before("1 minute ago")
+    && self.normal_target().author().timestamp().after("2 days ago"),
+    label("bookmark", self.name()) ++ "\n" ++
+    "author: " ++ format_commit_signature(self.normal_target().author()) ++ "\n" ++
+    "committed by: " ++ format_commit_signature(self.normal_target().committer()) ++ "\n" ++
+    indent("\t> ", self.normal_target().description()) ++ "\n"
+)
+'''
+
