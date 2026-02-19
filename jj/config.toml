@@ -40,6 +40,10 @@ track = ["util", "exec", "--", 'sh', '-euc', '''
 "parent_bookmark(rev)" = "latest(bookmarks() & trunk()-..rev)"
 "current_bookmark" = "parent_bookmark(@)"
 "current_parent_bookmark" = "parent_bookmark(parent_bookmark(@)-)"
+"parent_of(rev)" = "heads(first_ancestors(rev) & ~empty())"
+"bumpable_from(rev)" = "heads(first_ancestors(rev) & ~empty() & ~description(\"\"))"
+"closest_parent" = "parent_of(@)"
+"bumpable" = "bumpable_from(@)"
 
 [template-aliases]
 'signature_timestamp(signature)' = 'signature.timestamp().local()'

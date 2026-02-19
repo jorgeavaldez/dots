@@ -82,12 +82,12 @@ function commit() {
 }
 
 # first non empty parent commit
-alias nearestparent="jj log -r 'heads(first_ancestors(@) & ~empty())'"
+alias nearestparent="jj log -r closest_parent"
 # exclude head like this, negate @
 # 'heads((first_ancestors(@) ~ @) & ~empty())'
 
 function bump() {
-    jj bookmark move $(currbmname) -t @-
+    jj bookmark move "$(jj currbm-name)" -t @-
 }
 
 alias proj="cd ~/proj"
