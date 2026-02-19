@@ -26,12 +26,26 @@ merge-tool-edits-conflict-markers = true
 private-commits = '''description('private:*')'''
 
 [aliases]
+currbm = ["b", "l", "-r", "current_bookmark"]
+currbm-name = ["b", "l", "-r", "current_bookmark", "-T", "nonremote_bookmark_name"]
+parentbm = ["b", "l", "-r", "current_parent_bookmark"]
+parentbm-name = ["b", "l", "-r", "current_parent_bookmark", "-T", "nonremote_bookmark_name"]
 remote-recents = ["b", "l", "--remote", "origin", "-T", "bookmarks_remote_recent"]
 branches-only = ["log", "-r", "bookmarks() | fork_point(bookmarks()) | @"]
+track = ["util", "exec", "--", 'sh', '-euc', '''
+  jj b track "$(jj currbm-name)" --remote origin > /dev/null 2>&1
+''' ]
+
+[revset-aliases]
+"parent_bookmark(rev)" = "latest(bookmarks() & trunk()-..rev)"
+"current_bookmark" = "parent_bookmark(@)"
+"current_parent_bookmark" = "parent_bookmark(parent_bookmark(@)-)"
 
 [template-aliases]
 'signature_timestamp(signature)' = 'signature.timestamp().local()'
 'format_commit_signature(signature)' = 'signature ++ " (" ++ signature_timestamp(signature) ++ ")"'
+
+'nonremote_bookmark_name' = 'if(remote, "", name)'
 
 'bookmarks_remote_recent' = '''
 if(
