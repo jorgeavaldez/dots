@@ -56,15 +56,15 @@ function gttrack() {
 alias gtsubmit="gt submit --cli --ai --no-edit-description --no-edit-title"
 
 function draft() {
-    gtsubmit --draft --branch "$(currbmname)"
+    gtsubmit --draft --branch "$(jj currbm-name)"
 }
 
 function pr() {
-    gtsubmit --publish --branch "$(currbmname)"
+    gtsubmit --publish --branch "$(jj currbm-name)"
 }
 
 function prm() {
-    gtsubmit --publish -m --branch "$(currbmname)"
+    gtsubmit --publish -m --branch "$(jj currbm-name)"
 }
 
 # jj
