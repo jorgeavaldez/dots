@@ -71,10 +71,44 @@ safe_link_dir() {
     ln -sfn "$src" "$dest"
 }
 
+# Migrate legacy ~/.config/mise directory layout (directory + config.toml file)
+# to a directory symlink pointing at $DOTS_DIR/mise.
+prepare_mise_dir() {
+    local src_dir="$DOTS_DIR/mise"
+    local src_config="$src_dir/config.toml"
+    local dest_dir="$HOME/.config/mise"
+    local dest_config="$dest_dir/config.toml"
+
+    if [ -d "$dest_dir" ] && [ ! -L "$dest_dir" ]; then
+        local extra_entry
+        extra_entry="$(find "$dest_dir" -mindepth 1 -maxdepth 1 ! -name "config.toml" -print -quit)"
+
+        if [ -n "$extra_entry" ] && [ "$FORCE" != true ]; then
+            echo "!! Conflict: $dest_dir contains files other than config.toml"
+            echo "   First unexpected entry: $extra_entry"
+            echo ""
+            echo "   Use --force to overwrite."
+            exit 1
+        fi
+
+        if [ -f "$dest_config" ] && [ ! -L "$dest_config" ] && [ "$FORCE" != true ] && ! cmp -s "$dest_config" "$src_config"; then
+            echo "!! Conflict: $dest_config differs from $src_config"
+            echo "   Differences (existing → new):"
+            diff --color=auto -u "$dest_config" "$src_config" | sed 's/^/   /'
+            echo ""
+            echo "   Use --force to overwrite."
+            exit 1
+        fi
+
+        rm -rf "$dest_dir"
+    fi
+}
+
 # Create parent directories if needed
 mkdir -p ~/.config/opencode
 mkdir -p ~/.config/jj
-mkdir -p ~/.config/mise
+
+prepare_mise_dir
 
 # Symlink dotfiles
 safe_link "$DOTS_DIR/.zshrc" ~/.zshrc
@@ -82,7 +116,7 @@ safe_link "$DOTS_DIR/.tmux.conf" ~/.tmux.conf
 safe_link "$DOTS_DIR/opencode.json" ~/.config/opencode/opencode.json
 safe_link "$DOTS_DIR/starship.toml" ~/.config/starship.toml
 safe_link_dir "$DOTS_DIR/wezterm" ~/.config/wezterm
-safe_link "$DOTS_DIR/config.toml" ~/.config/mise/config.toml
+safe_link_dir "$DOTS_DIR/mise" ~/.config/mise
 safe_link "$DOTS_DIR/jj/config.toml" ~/.config/jj/config.toml
 safe_link "$DOTS_DIR/git/config" ~/.gitconfig
 

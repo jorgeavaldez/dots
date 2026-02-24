@@ -22,7 +22,7 @@ This will symlink:
 - `opencode.json` → `~/.config/opencode/opencode.json`
 - `starship.toml` → `~/.config/starship.toml`
 - `wezterm/` → `~/.config/wezterm`
-- `config.toml` → `~/.config/mise/config.toml`
+- `mise/` → `~/.config/mise`
 - `jj/config.toml` → `~/.config/jj/config.toml`
 - `git/config` → `~/.gitconfig`
 
