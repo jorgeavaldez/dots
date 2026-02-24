@@ -112,6 +112,7 @@ prepare_mise_dir
 
 # Symlink dotfiles
 safe_link "$DOTS_DIR/.zshrc" ~/.zshrc
+safe_link "$DOTS_DIR/.zprofile" ~/.zprofile
 safe_link "$DOTS_DIR/.tmux.conf" ~/.tmux.conf
 safe_link "$DOTS_DIR/opencode.json" ~/.config/opencode/opencode.json
 safe_link "$DOTS_DIR/starship.toml" ~/.config/starship.toml

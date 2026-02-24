@@ -10,10 +10,13 @@ fi
 #   source /usr/share/zsh/manjaro-zsh-prompt
 # fi
 
-# I like to use 1password to manage my ssh keys
-# Typically i bypass this by restarting the ssh agent manually
-if [[ ! -f "$SSH_AUTH_SOCK" && "$(uname)" == "Linux" ]]; then
-    export SSH_AUTH_SOCK=~/.1password/agent.sock
+# Shared login-safe environment and PATH.
+if [[ -f "$HOME/dots/zsh/env.zsh" ]]; then
+    source "$HOME/dots/zsh/env.zsh"
+fi
+
+if [[ -f "$HOME/dots/zsh/path.zsh" ]]; then
+    source "$HOME/dots/zsh/path.zsh"
 fi
 
 # aliases
@@ -102,10 +105,6 @@ alias ezsh="nvim $HOME/.zshrc"
 alias reload="source $HOME/.zshrc"
 alias evim="nvim $HOME/.config/nvim/init.lua"
 
-export EDITOR="nvim"
-export BAT_THEME="ansi"
-export GOOSE_CLI_THEME="ansi"
-export WF_DB_PATH="$HOME/proj/wf-db/nebari.db"
 # export TERM=xterm-256color
 # export CLICOLOR=1
 
@@ -405,65 +404,10 @@ function podshell() {
     kubectl -n temporal exec -it $POD -c temporal-worker -- bash
 }
 
-export ANDROID_HOME="$HOME/Android/Sdk"
-export ANDROID_SDK_ROOT="$HOME/Android/Sdk"
-
-export BUN_INSTALL="$HOME/.bun"
-export FLYCTL_INSTALL="$HOME/.fly"
-export GOPATH="$HOME/proj/go"
-
-if [ -f "$HOME/bin/google-cloud-sdk/path.zsh.inc" ]; then . "$HOME/bin/google-cloud-sdk/path.zsh.inc"; fi
-
-export PATH="${PATH}:${ANDROID_SDK_ROOT}/emulator"
-export PATH="${PATH}:${ANDROID_SDK_ROOT}/platform-tools"
-export PATH="${PATH}:${ANDROID_SDK_ROOT}/tools"
-export PATH="${PATH}:${ANDROID_SDK_ROOT}/tools/bin"
-export PATH="${JAVA_HOME}/bin:${PATH}"
-export PATH="${GOPATH//://bin:}/bin:$PATH"
-export PATH="/usr/local/sbin:$PATH"
-export PATH="$HOME/.local/bin:$PATH"
-export PATH="${PATH}:$HOME/bin"
-export PATH="$HOME/.ebcli-virtual-env/executables:${PATH}"
-export PATH="${PATH}:$HOME/.foundry/bin"
-export PATH="$HOME/.local/share/solana/install/active_release/bin:${PATH}"
-export PATH="$BUN_INSTALL/bin:${PATH}"
-export PATH="$HOME/proj/solidity-one-liners/bin:${PATH}"
-export PATH="$HOME/proj/nimlsp:$PATH"
-export PATH="$HOME/.nimble/bin:${PATH}"
-export PATH="$HOME/.cargo/bin:${PATH}"
-export PATH="$HOME/go/bin:${PATH}"
-export PATH="$HOME/.atuin/bin:${PATH}"
-export PATH="$FLYCTL_INSTALL/bin:$PATH"
-export PATH="${HOME}/dots/scripts:${PATH}"
-export PATH="$PATH:/Users/jorge/.lmstudio/bin"
-
-# opencode
-export PATH="$HOME/.opencode/bin:$PATH"
-export PATH="$HOME/.claude/local:$PATH"
-
-export PNPM_HOME="$HOME/.local/share/pnpm"
-case ":$PATH:" in
-    *":$PNPM_HOME:"*) ;;
-    *) export PATH="$PNPM_HOME:$PATH" ;;
-esac
-
-if [ -d /opt/homebrew/bin ]; then export PATH="/opt/homebrew/bin:$PATH"; fi
-if [ -d /opt/homebrew/opt/postgresql@17/bin ]; then export PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH"; fi
-
-. "$HOME/.cargo/env"
-
-export USE_GKE_GCLOUD_AUTH_PLUGIN=True
-export CLOUDSDK_DEVAPPSERVER_PYTHON="/usr/bin/python2"
-export CLAUDE_CODE_MAX_OUTPUT_TOKENS=64000
-
 __git_files() {
     _wanted files expl 'local files' _files
 }
 
-source "$HOME/dots/secrets.sh"
-
-if [ -f /opt/homebrew/bin/brew ]; then eval "$(/opt/homebrew/bin/brew shellenv)"; fi
-if [ -f /usr/local/bin/brew ]; then eval "$(/usr/local/bin/brew shellenv)"; fi
 [ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
 
 if type brew &>/dev/null; then
@@ -475,7 +419,9 @@ fi
 if [[ $FIND_IT_FASTER_ACTIVE -eq 0 ]]; then
     eval "$(atuin init zsh)"
     eval "$(zoxide init zsh)"
-    eval "$(mise activate zsh)"
+    if [[ -f "$HOME/dots/zsh/mise.zsh" ]]; then
+        source "$HOME/dots/zsh/mise.zsh"
+    fi
     eval "$(starship init zsh)"
 fi
 

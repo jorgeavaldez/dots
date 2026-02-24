@@ -18,6 +18,7 @@ If a file already exists at the destination and isn't already symlinked correctl
 
 This will symlink:
 - `.zshrc` → `~/.zshrc`
+- `.zprofile` → `~/.zprofile`
 - `.tmux.conf` → `~/.tmux.conf`
 - `opencode.json` → `~/.config/opencode/opencode.json`
 - `starship.toml` → `~/.config/starship.toml`

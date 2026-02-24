@@ -3,7 +3,7 @@
 set -euo pipefail
 
 {
-    find . -type f \( -name '.zshrc' -o -name '*.sh' -o -name '*.bash' -o -name '*.zsh' \) ! -path './.git/*'
+    find . -type f \( -name '.zshrc' -o -name '.zprofile' -o -name '*.sh' -o -name '*.bash' -o -name '*.zsh' \) ! -path './.git/*'
 
     if [ -d scripts ]; then
         while IFS= read -r f; do
