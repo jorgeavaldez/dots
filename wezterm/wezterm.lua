@@ -3,11 +3,15 @@ local wezterm = require("wezterm") ---@type Wezterm
 local appearance = require("appearance")
 local config = wezterm.config_builder() ---@type Config
 
-if appearance.is_dark() then
+local is_dark = appearance.is_dark()
+if is_dark then
 	config.color_scheme = "Catppuccin Mocha"
 else
 	config.color_scheme = "Catppuccin Latte"
 end
+
+config.set_environment_variables = config.set_environment_variables or {}
+config.set_environment_variables.WEZTERM_APPEARANCE = is_dark and "dark" or "light"
 
 config.font = wezterm.font("JetBrains Mono")
 config.font_size = 13

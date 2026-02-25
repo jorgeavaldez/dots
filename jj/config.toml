@@ -5,7 +5,17 @@ name = "Jorge Valdez"
 email = "jorge@yung.dev"
 
 [ui]
-pager = ["delta", "--detect-dark-light=never", "--pager", "less -FRX"]
+pager = ["sh", "-lc", '''
+if [ -n "$NVIM" ]; then
+  case "${WEZTERM_APPEARANCE:-}" in
+    dark)  exec delta --dark --detect-dark-light=never --pager "less -FRX" ;;
+    light) exec delta --light --detect-dark-light=never --pager "less -FRX" ;;
+    *)     exec delta --detect-dark-light=never --pager "less -FRX" ;;
+  esac
+else
+  exec delta --pager "less -FRX"
+fi
+''']
 diff-formatter = ":git"
 diff-editor = ["nvim", "-c", "DiffEditor $left $right $output"]
 merge-editor = "diffconflicts"
