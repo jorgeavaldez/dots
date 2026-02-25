@@ -5,7 +5,7 @@ name = "Jorge Valdez"
 email = "jorge@yung.dev"
 
 [ui]
-pager = ["delta", "--pager", "less -FRX"]
+pager = ["delta", "--detect-dark-light=never", "--pager", "less -FRX"]
 diff-formatter = ":git"
 diff-editor = ["nvim", "-c", "DiffEditor $left $right $output"]
 merge-editor = "diffconflicts"
