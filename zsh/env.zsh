@@ -14,7 +14,6 @@ fi
 export EDITOR="nvim"
 export BAT_THEME="ansi"
 export GOOSE_CLI_THEME="ansi"
-export WF_DB_PATH="$HOME/proj/wf-db/nebari.db"
 
 export ANDROID_HOME="$HOME/Android/Sdk"
 export ANDROID_SDK_ROOT="$HOME/Android/Sdk"
