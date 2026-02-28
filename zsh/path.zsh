@@ -53,6 +53,9 @@ export PATH="$PATH:$HOME/.lmstudio/bin"
 export PATH="$HOME/.opencode/bin:$PATH"
 export PATH="$HOME/.claude/local:$PATH"
 
+# obsidian cli
+export PATH="$PATH:/Applications/Obsidian.app/Contents/MacOS"
+
 export PNPM_HOME="$HOME/.local/share/pnpm"
 case ":$PATH:" in
     *":$PNPM_HOME:"*) ;;
