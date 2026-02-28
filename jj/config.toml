@@ -5,7 +5,7 @@ name = "Jorge Valdez"
 email = "jorge@yung.dev"
 
 [ui]
-pager = ["sh", "-lc", '''
+pager = ["sh", "-c", '''
 if [ -n "$NVIM" ]; then
   case "${WEZTERM_APPEARANCE:-}" in
     dark)  exec delta --dark --detect-dark-light=never --pager "less -FRX" ;;
