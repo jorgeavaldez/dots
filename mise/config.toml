@@ -39,6 +39,7 @@ shfmt = "latest"
 cmake = "latest"
 shellcheck = "latest"
 delta = "latest"
+"npm:obsidian-headless" = "latest"
 
 [settings]
 idiomatic_version_file_enable_tools = ["python"]
