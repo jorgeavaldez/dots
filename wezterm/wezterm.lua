@@ -38,25 +38,53 @@ local function basename(path)
 	return path:gsub("(.*[/\\])", "")
 end
 
-local function title_from_pane(pane, tab_index)
-	local process = basename(pane:get_foreground_process_name())
-	if process and process ~= "" then
-		return process
-	end
-
-	local title = pane:get_title()
-	if title and title ~= "" then
+---comment "format-tab-title" callback handler, sets the tab title from the active pane process
+---@param tab TabInformation
+---@param max_width number
+---@return string
+local function title_from_pane(
+	tab,
+	---@diagnostic disable-next-line: unused-local
+	max_width
+)
+	local title = tab.tab_title
+	if title and #title > 0 then
 		return title
 	end
 
-	return "Tab " .. (tab_index + 1)
+	local process = basename(tab.active_pane.foreground_process_name)
+	if process and process ~= "" then
+		return " [" .. tab.tab_index .. "] " .. process .. " "
+	end
+
+	local pane_title = tab.active_pane.title
+	if pane_title and pane_title ~= "" then
+		return " [" .. tab.tab_index .. "] " .. pane_title .. " "
+	end
+
+	return " [" .. tab.tab_index .. "] "
 end
 
-wezterm.on("format-tab-title", function(tab)
-	return title_from_pane(tab.active_pane, tab.tab_index)
+wezterm.on("format-tab-title", function(
+	tab, ---@type TabInformation
+	---@diagnostic disable-next-line: unused-local
+	tabs, ---@type TabInformation[]
+	---@diagnostic disable-next-line: unused-local
+	panes, ---@type PaneInformation[]
+	---@diagnostic disable-next-line: unused-local
+	curr_conf, ---@type Config
+	---@diagnostic disable-next-line: unused-local
+	hover, ---@type boolean
+	max_width ---@type number
+)
+	return title_from_pane(tab, max_width)
 end)
 
-wezterm.on("update-right-status", function(window, pane)
+wezterm.on("update-right-status", function(
+	window,
+	---@diagnostic disable-next-line: unused-local
+	pane
+)
 	local name = window:active_key_table()
 	if name then
 		name = "TABLE: " .. name
@@ -81,7 +109,7 @@ config.keys = {
 	},
 	-- scroll
 	{
-		key = "J",
+		key = "j",
 		mods = "LEADER",
 		action = wezterm.action.ActivateKeyTable({
 			name = "scroll_mode",
@@ -90,7 +118,7 @@ config.keys = {
 		}),
 	},
 	{
-		key = "K",
+		key = "k",
 		mods = "LEADER",
 		action = wezterm.action.ActivateKeyTable({
 			name = "scroll_mode",
@@ -109,17 +137,17 @@ config.key_tables = {
 			key = "K",
 			action = wezterm.action.ScrollByLine(-1),
 		},
-		{ key = "Escape", action = "PopKeyTable" },
+		{ key = "Escape", action = wezterm.action.PopKeyTable() },
 	},
 	window_mode = {
 		-- splits
 		{
 			key = "v",
-			action = wezterm.action.SplitVertical,
+			action = wezterm.action.SplitVertical({}),
 		},
 		{
 			key = "s",
-			action = wezterm.action.SplitHorizontal,
+			action = wezterm.action.SplitHorizontal({}),
 		},
 		-- navigate between splits
 		{
