@@ -96,7 +96,10 @@ config.keys = {
 	{
 		key = "t",
 		mods = "LEADER",
-		action = wezterm.action.SpawnTab("CurrentPaneDomain"),
+		action = wezterm.action.ActivateKeyTable({
+			name = "tabs_mode",
+			one_shot = true,
+		}),
 	},
 	-- windows/splits/panes
 	{
@@ -137,7 +140,7 @@ config.key_tables = {
 			key = "K",
 			action = wezterm.action.ScrollByLine(-1),
 		},
-		{ key = "Escape", action = wezterm.action.PopKeyTable() },
+		{ key = "Escape", action = wezterm.action.PopKeyTable },
 	},
 	window_mode = {
 		-- splits
@@ -170,6 +173,33 @@ config.key_tables = {
 			key = "x",
 			action = wezterm.action.CloseCurrentPane({ confirm = true }),
 		},
+	},
+	tabs_mode = {
+		{
+			key = "l",
+			action = wezterm.action.ShowTabNavigator,
+		},
+		{
+			key = "c",
+			action = wezterm.action.SpawnTab("CurrentPaneDomain"),
+		},
+		{
+			key = "q",
+			action = wezterm.action.CloseCurrentTab({ confirm = true }),
+		},
+		{
+			key = "n",
+			action = wezterm.action.ActivateTabRelative(1),
+		},
+		{
+			key = "p",
+			action = wezterm.action.ActivateTabRelative(-1),
+		},
+		{
+			key = "o",
+			action = wezterm.action.ActivateLastTab,
+		},
+		-- TODO: interactive rename tab
 	},
 }
 
