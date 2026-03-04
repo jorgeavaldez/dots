@@ -54,15 +54,15 @@ local function title_from_pane(
 
 	local process = basename(tab.active_pane.foreground_process_name)
 	if process and process ~= "" then
-		return " [" .. tab.tab_index .. "] " .. process .. " "
+		return " [" .. tab.tab_index + 1 .. "] " .. process .. " "
 	end
 
 	local pane_title = tab.active_pane.title
 	if pane_title and pane_title ~= "" then
-		return " [" .. tab.tab_index .. "] " .. pane_title .. " "
+		return " [" .. tab.tab_index + 1 .. "] " .. pane_title .. " "
 	end
 
-	return " [" .. tab.tab_index .. "] "
+	return " [" .. tab.tab_index + 1 .. "] "
 end
 
 wezterm.on("format-tab-title", function(
@@ -140,6 +140,7 @@ config.key_tables = {
 			key = "K",
 			action = wezterm.action.ScrollByLine(-1),
 		},
+		---@diagnostic disable-next-line: assign-type-mismatch
 		{ key = "Escape", action = wezterm.action.PopKeyTable },
 	},
 	window_mode = {
@@ -177,6 +178,7 @@ config.key_tables = {
 	tabs_mode = {
 		{
 			key = "l",
+			---@diagnostic disable-next-line: assign-type-mismatch
 			action = wezterm.action.ShowTabNavigator,
 		},
 		{
@@ -197,6 +199,7 @@ config.key_tables = {
 		},
 		{
 			key = "o",
+			---@diagnostic disable-next-line: assign-type-mismatch
 			action = wezterm.action.ActivateLastTab,
 		},
 		-- TODO: interactive rename tab
