@@ -130,6 +130,40 @@ config.keys = {
 	},
 }
 
+---comment "format-tab-title" callback handler, sets the tab title from the active pane process
+---@param window Window
+---@param pane Pane
+---@param line string?
+local function rename_current_tab(
+	window,
+	---@diagnostic disable-next-line: unused-local
+	pane,
+	line
+)
+	if line == nil or line == "" or line:gsub("^%s*(.-)%s*$", "%1") == "" then
+		return
+	end
+
+	local curr_tab = window:active_tab()
+	local curr_tab_id = curr_tab:tab_id()
+	local all_tabs = window:mux_window():tabs_with_info()
+
+	local tab_id = nil
+	for _, tab in ipairs(all_tabs) do
+		if tab.tab:tab_id() == curr_tab_id then
+			tab_id = tab.index
+		end
+	end
+
+	local tab_prefix_name = " " .. line:gsub("^%s*(.-)%s*$", "%1") .. " "
+
+	if tab_id ~= nil then
+		tab_prefix_name = " [" .. (tab_id + 1) .. "]" .. tab_prefix_name
+	end
+
+	window:active_tab():set_title(tab_prefix_name)
+end
+
 config.key_tables = {
 	scroll_mode = {
 		{
@@ -202,7 +236,13 @@ config.key_tables = {
 			---@diagnostic disable-next-line: assign-type-mismatch
 			action = wezterm.action.ActivateLastTab,
 		},
-		-- TODO: interactive rename tab
+		{
+			key = "r",
+			action = wezterm.action.PromptInputLine({
+				description = "Enter tab name",
+				action = wezterm.action_callback(rename_current_tab),
+			}),
+		},
 	},
 }
 
