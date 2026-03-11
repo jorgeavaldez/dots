@@ -105,6 +105,20 @@ alias ezsh="nvim $HOME/.zshrc"
 alias reload="source $HOME/.zshrc"
 alias evim="nvim $HOME/.config/nvim/init.lua"
 
+function mise-use-private() {
+    local config_path="$HOME/.config/mise.toml"
+
+    if [[ $# -eq 0 ]]; then
+        echo "Usage: mise-use-private <tool@version> [tool@version ...]"
+        echo "Example: mise-use-private npm:confluence-cli@/Users/jorge/proj/confluence-cli"
+        return 1
+    fi
+
+    command mise use --path "$config_path" "$@" || return $?
+    command mise install -f "$@" || return $?
+    rehash
+}
+
 # export TERM=xterm-256color
 # export CLICOLOR=1
 
