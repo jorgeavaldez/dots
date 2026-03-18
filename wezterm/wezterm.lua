@@ -47,19 +47,14 @@ local function title_from_pane(
 	---@diagnostic disable-next-line: unused-local
 	max_width
 )
-	local title = tab.tab_title
-	if title and #title > 0 then
-		return title
+	local pane_title = tab.active_pane.title
+	if pane_title and pane_title ~= "" then
+		return " [" .. tab.tab_index + 1 .. "] " .. pane_title .. " "
 	end
 
 	local process = basename(tab.active_pane.foreground_process_name)
 	if process and process ~= "" then
 		return " [" .. tab.tab_index + 1 .. "] " .. process .. " "
-	end
-
-	local pane_title = tab.active_pane.title
-	if pane_title and pane_title ~= "" then
-		return " [" .. tab.tab_index + 1 .. "] " .. pane_title .. " "
 	end
 
 	return " [" .. tab.tab_index + 1 .. "] "
