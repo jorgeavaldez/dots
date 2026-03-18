@@ -123,6 +123,12 @@ config.keys = {
 			one_shot = false,
 		}),
 	},
+	-- shift+enter
+	{
+		key = "Enter",
+		mods = "SHIFT",
+		action = wezterm.action.SendString("\x1b[200~\n\x1b[201~"),
+	},
 }
 
 ---comment "format-tab-title" callback handler, sets the tab title from the active pane process
