@@ -35,7 +35,58 @@ local function basename(path)
 		return nil
 	end
 
-	return path:gsub("(.*[/\\])", "")
+	return tostring(path):gsub("(.*[/\\])", "")
+end
+
+local function trim(text)
+	if not text then
+		return nil
+	end
+
+	local trimmed = tostring(text):gsub("^%s*(.-)%s*$", "%1")
+	if trimmed == "" then
+		return nil
+	end
+
+	return trimmed
+end
+
+local function strip_tab_index_prefix(title)
+	return title:gsub("^%s*%[%d+%]%s*", "")
+end
+
+local function is_shell_process(process)
+	return process == "zsh"
+		or process == "bash"
+		or process == "sh"
+		or process == "fish"
+		or process == "nu"
+end
+
+local function cwd_basename(cwd)
+	if not cwd then
+		return nil
+	end
+
+	local path = cwd
+	if type(cwd) == "table" then
+		path = cwd.file_path or cwd.path
+	end
+
+	if not path or path == "" then
+		return nil
+	end
+
+	path = tostring(path):gsub("[/\\]+$", "")
+	return trim(basename(path))
+end
+
+local function format_tab_title(tab_index, title)
+	if title then
+		return " [" .. (tab_index + 1) .. "] " .. title .. " "
+	end
+
+	return " [" .. (tab_index + 1) .. "] "
 end
 
 ---comment "format-tab-title" callback handler, sets the tab title from the active pane process
@@ -47,17 +98,33 @@ local function title_from_pane(
 	---@diagnostic disable-next-line: unused-local
 	max_width
 )
-	local pane_title = tab.active_pane.title
-	if pane_title and pane_title ~= "" then
-		return " [" .. tab.tab_index + 1 .. "] " .. pane_title .. " "
+	local explicit_title = trim(strip_tab_index_prefix(tab.tab_title or ""))
+	if explicit_title then
+		return format_tab_title(tab.tab_index, explicit_title)
 	end
 
-	local process = basename(tab.active_pane.foreground_process_name)
-	if process and process ~= "" then
-		return " [" .. tab.tab_index + 1 .. "] " .. process .. " "
+	local pane = tab.active_pane
+	local process = trim(basename(pane.foreground_process_name))
+	local pane_title = trim(pane.title)
+
+	if process and not is_shell_process(process) then
+		return format_tab_title(tab.tab_index, pane_title or process)
 	end
 
-	return " [" .. tab.tab_index + 1 .. "] "
+	local cwd = cwd_basename(pane.current_working_dir)
+	if cwd then
+		return format_tab_title(tab.tab_index, cwd)
+	end
+
+	if process then
+		return format_tab_title(tab.tab_index, process)
+	end
+
+	if pane_title and pane_title ~= "wezterm" then
+		return format_tab_title(tab.tab_index, pane_title)
+	end
+
+	return format_tab_title(tab.tab_index)
 end
 
 wezterm.on("format-tab-title", function(
@@ -131,7 +198,7 @@ config.keys = {
 	},
 }
 
----comment "format-tab-title" callback handler, sets the tab title from the active pane process
+---comment prompt callback handler, sets an explicit title for the current tab
 ---@param window Window
 ---@param pane Pane
 ---@param line string?
@@ -141,28 +208,12 @@ local function rename_current_tab(
 	pane,
 	line
 )
-	if line == nil or line == "" or line:gsub("^%s*(.-)%s*$", "%1") == "" then
+	local title = trim(line)
+	if not title then
 		return
 	end
 
-	local curr_tab = window:active_tab()
-	local curr_tab_id = curr_tab:tab_id()
-	local all_tabs = window:mux_window():tabs_with_info()
-
-	local tab_id = nil
-	for _, tab in ipairs(all_tabs) do
-		if tab.tab:tab_id() == curr_tab_id then
-			tab_id = tab.index
-		end
-	end
-
-	local tab_prefix_name = " " .. line:gsub("^%s*(.-)%s*$", "%1") .. " "
-
-	if tab_id ~= nil then
-		tab_prefix_name = " [" .. (tab_id + 1) .. "]" .. tab_prefix_name
-	end
-
-	window:active_tab():set_title(tab_prefix_name)
+	window:active_tab():set_title(title)
 end
 
 config.key_tables = {
