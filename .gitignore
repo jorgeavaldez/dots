@@ -1,4 +1,5 @@
 scripts/private.sh
+zsh/private.zsh
 secrets.sh
 .DS_Store
 .aider*

@@ -5,11 +5,6 @@ if [[ -e /usr/share/zsh/manjaro-zsh-config ]]; then
     source /usr/share/zsh/manjaro-zsh-config
 fi
 
-# Manjaro zsh prompt
-# if [[ -e /usr/share/zsh/manjaro-zsh-prompt ]]; then
-#   source /usr/share/zsh/manjaro-zsh-prompt
-# fi
-
 # Shared login-safe environment and PATH.
 if [[ -f "$HOME/dots/zsh/env.zsh" ]]; then
     source "$HOME/dots/zsh/env.zsh"
@@ -17,6 +12,10 @@ fi
 
 if [[ -f "$HOME/dots/zsh/path.zsh" ]]; then
     source "$HOME/dots/zsh/path.zsh"
+fi
+
+if [[ -f "$HOME/dots/zsh/private.zsh" ]]; then
+    source "$HOME/dots/zsh/private.zsh"
 fi
 
 # aliases
@@ -46,30 +45,6 @@ alias l="eza -l -a -h"
 alias c="clear"
 alias dco="docker compose"
 
-# aliases for graphite stuff
-alias gtsubmit="gt submit --cli --ai --no-edit-description --no-edit-title"
-alias gtdraft="gtsubmit --draft"
-alias gtpr="gtsubmit --publish"
-alias gtprm="gtsubmit --publish -m"
-
-function gttrack() {
-    gt track --branch "$(jj currbm-name)" -p "$(jj parentbm-name)"
-}
-
-alias gtsubmit="gt submit --cli --ai --no-edit-description --no-edit-title"
-
-function draft() {
-    gtsubmit --draft --branch "$(jj currbm-name)"
-}
-
-function pr() {
-    gtsubmit --publish --branch "$(jj currbm-name)"
-}
-
-function prm() {
-    gtsubmit --publish -m --branch "$(jj currbm-name)"
-}
-
 # jj
 alias psh="jj git push"
 function commit() {
@@ -83,6 +58,10 @@ function commit() {
         jj commit
     fi
 }
+
+if [[ -f "$HOME/dots/zsh/pr.zsh" ]]; then
+    source "$HOME/dots/zsh/pr.zsh"
+fi
 
 # first non empty parent commit
 alias nearestparent="jj log -r closest_parent"
@@ -205,7 +184,7 @@ function rename-go-mod() {
 }
 
 function pgd() {
-    pgcli postgres://postgres:password@127.0.0.1:5432/$1
+    pgcli "postgres://postgres:password@127.0.0.1:5432/$1"
 }
 
 function hpg() {
@@ -227,7 +206,7 @@ function hpgdump() {
 }
 
 function secret() {
-    op item list --categories 'API Credential' | rg -i $1 | awk '{print $1}' | xargs -n1 op item get --fields credential
+    op item list --categories 'API Credential' | rg -i "$1" | awk '{print $1}' | xargs -n1 op item get --fields credential
 }
 
 function tellme() {
@@ -309,7 +288,7 @@ function pg2md() {
 
 function podshell() {
     POD=$(kubectl -n temporal get pods -l app=temporal-worker -o jsonpath='{.items[0].metadata.name}')
-    kubectl -n temporal exec -it $POD -c temporal-worker -- bash
+    kubectl -n temporal exec -it "$POD" -c temporal-worker -- bash
 }
 
 __git_files() {
