@@ -5,7 +5,7 @@ function prm() {
 }
 
 function prs() {
-    REPO=$(jj git remote list | cut -d" " -f 2 | sed 's/.*github\.com\/\(.*\)\.git/\1/g')
+    REPO=$(jj git remote list | cut -d" " -f 2 | sed 's/.*github\.com[\/:]\(.*\)\.git/\1/g')
     gh pr list -A '@me' -R "$REPO" --state open
 }
 
