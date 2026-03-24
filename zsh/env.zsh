@@ -27,5 +27,5 @@ export CLOUDSDK_DEVAPPSERVER_PYTHON="/usr/bin/python2"
 export CLAUDE_CODE_MAX_OUTPUT_TOKENS=64000
 
 if [[ -f "$HOME/dots/secrets.sh" ]]; then
-    source "$HOME/dots/secrets.sh"
+    source "$HOME/dots/secrets.sh" || true
 fi
