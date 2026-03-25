@@ -13,3 +13,7 @@ fi
 if [[ -f "$HOME/dots/zsh/mise.zsh" ]]; then
     source "$HOME/dots/zsh/mise.zsh" || true
 fi
+
+if [[ -f "$HOME/proj/werk/.shellrc" ]]; then
+    source "$HOME/proj/werk/.shellrc" || true
+fi
