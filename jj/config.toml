@@ -45,6 +45,7 @@ branches-only = ["log", "-r", "bookmarks() | fork_point(bookmarks()) | @"]
 track = ["util", "exec", "--", 'sh', '-euc', '''
   jj b track "$(jj currbm-name)" --remote origin > /dev/null 2>&1
 ''' ]
+rebase-topics = ["rebase", "--skip-emptied", "-r", "topic_heads", "-d", "trunk()"]
 
 [revset-aliases]
 "parent_bookmark(rev)" = "latest(bookmarks() & trunk()-..rev)"
@@ -54,6 +55,7 @@ track = ["util", "exec", "--", 'sh', '-euc', '''
 "bumpable_from(rev)" = "heads(first_ancestors(rev) & ~empty() & ~description(\"\"))"
 "closest_parent" = "parent_of(@)"
 "bumpable" = "bumpable_from(@)"
+"topic_heads" = "heads(mutable() & (trunk().. ~ trunk()::))"
 
 [template-aliases]
 'signature_timestamp(signature)' = 'signature.timestamp().local()'
