@@ -76,3 +76,8 @@ if(
 )
 '''
 
+'short_commit' = '''
+    coalesce(self.description().first_line(), "(no description set)") ++ " " ++
+    "author: " ++ format_commit_signature(self.author()) ++ "\n"
+'''
+
