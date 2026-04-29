@@ -41,6 +41,7 @@ shellcheck = "latest"
 delta = "latest"
 "npm:obsidian-headless" = "latest"
 tree-sitter = "latest"
+yazi = "latest"
 
 [settings]
 idiomatic_version_file_enable_tools = ["python"]
