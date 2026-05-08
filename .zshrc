@@ -46,6 +46,9 @@ alias c="clear"
 alias dco="docker compose"
 
 # jj
+alias j="jj"
+alias js="jj st"
+alias jd="jj diff"
 alias psh="jj git push"
 function commit() {
     if [[ -n "$1" ]]; then
