@@ -1,5 +1,4 @@
 [tools]
-bun = "latest"
 deno = "latest"
 elixir = "latest"
 erlang = "latest"
@@ -42,6 +41,8 @@ delta = "latest"
 "npm:obsidian-headless" = "latest"
 tree-sitter = "latest"
 yazi = "latest"
+bun = "latest"
+"npm:hunkdiff" = "latest"
 
 [settings]
 idiomatic_version_file_enable_tools = ["python"]
