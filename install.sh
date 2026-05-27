@@ -104,6 +104,36 @@ prepare_mise_dir() {
     fi
 }
 
+install_wezterm_terminfo() {
+    local terminfo_url="https://raw.githubusercontent.com/wezterm/wezterm/main/termwiz/data/wezterm.terminfo"
+    local terminfo_tmp
+
+    if ! command -v curl >/dev/null 2>&1; then
+        echo "!! Warning: curl not found; skipping WezTerm terminfo install"
+        return 0
+    fi
+
+    if ! command -v tic >/dev/null 2>&1; then
+        echo "!! Warning: tic not found; skipping WezTerm terminfo install"
+        return 0
+    fi
+
+    terminfo_tmp="$(mktemp)"
+    if ! curl -fsSL -o "$terminfo_tmp" "$terminfo_url"; then
+        rm -f "$terminfo_tmp"
+        echo "!! Failed to download WezTerm terminfo definitions"
+        exit 1
+    fi
+
+    if ! tic -x -o "$HOME/.terminfo" "$terminfo_tmp"; then
+        rm -f "$terminfo_tmp"
+        echo "!! Failed to install WezTerm terminfo definitions"
+        exit 1
+    fi
+
+    rm -f "$terminfo_tmp"
+}
+
 # Create parent directories if needed
 mkdir -p ~/.config/opencode
 mkdir -p ~/.config/jj
@@ -120,5 +150,7 @@ safe_link_dir "$DOTS_DIR/wezterm" ~/.config/wezterm
 safe_link_dir "$DOTS_DIR/mise" ~/.config/mise
 safe_link "$DOTS_DIR/jj/config.toml" ~/.config/jj/config.toml
 safe_link "$DOTS_DIR/git/config" ~/.gitconfig
+
+install_wezterm_terminfo
 
 echo "Dotfiles symlinked!"

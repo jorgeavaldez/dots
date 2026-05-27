@@ -27,6 +27,8 @@ This will symlink:
 - `jj/config.toml` → `~/.config/jj/config.toml`
 - `git/config` → `~/.gitconfig`
 
+It also downloads the latest WezTerm terminfo definitions from upstream and installs them into `~/.terminfo` so tools like `less` work when `TERM=wezterm`.
+
 ## shell formatting
 
 Shell files are formatted with `shfmt` (installed via `mise`).
