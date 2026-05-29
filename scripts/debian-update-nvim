@@ -1,0 +1,162 @@
+#!/usr/bin/env bash
+# Update the locally installed Neovim release tarball under /usr/local.
+# The Debian dev host's nvim is not apt-managed; see ~/obsidian/delvaze/garden/debian-dev-host-update-nvim.md.
+
+set -Eeuo pipefail
+
+log() {
+  printf '[debian-update-nvim] %s\n' "$*"
+}
+
+fail() {
+  printf '[debian-update-nvim] ERROR: %s\n' "$*" >&2
+  exit 1
+}
+
+usage() {
+  cat <<'USAGE'
+Usage: debian-update-nvim [--check]
+
+Update the locally installed Neovim release tarball under /usr/local.
+
+Options:
+  --check      Print current/latest release information without installing.
+  -h, --help   Show this help.
+USAGE
+}
+
+require_command() {
+  command -v "$1" >/dev/null 2>&1 || fail "missing required command: $1"
+}
+
+tmp=""
+cleanup() {
+  if [[ -n "$tmp" && -d "$tmp" ]]; then
+    rm -rf "$tmp"
+  fi
+}
+trap cleanup EXIT
+
+mode="install"
+case "${1:-}" in
+  "")
+    ;;
+  --check)
+    mode="check"
+    ;;
+  -h|--help)
+    usage
+    exit 0
+    ;;
+  *)
+    fail "unexpected argument: $1"
+    ;;
+esac
+[[ $# -le 1 ]] || fail "too many arguments"
+
+required_commands=(curl jq)
+if [[ "$mode" == "install" ]]; then
+  required_commands+=(tar sha256sum sudo install)
+fi
+for cmd in "${required_commands[@]}"; do
+  require_command "$cmd"
+done
+
+case "$(uname -m)" in
+  x86_64|amd64)
+    asset_name="nvim-linux-x86_64.tar.gz"
+    extract_dir="nvim-linux-x86_64"
+    ;;
+  aarch64|arm64)
+    asset_name="nvim-linux-arm64.tar.gz"
+    extract_dir="nvim-linux-arm64"
+    ;;
+  *)
+    fail "unsupported architecture: $(uname -m)"
+    ;;
+esac
+
+current_version="not installed"
+if command -v nvim >/dev/null 2>&1; then
+  current_version="$(nvim --version | head -n 1)"
+fi
+log "current nvim: $current_version"
+
+tmp="$(mktemp -d)"
+release_json="$tmp/release.json"
+tarball="$tmp/$asset_name"
+
+log "fetching latest Neovim release metadata"
+curl -fsSL https://api.github.com/repos/neovim/neovim/releases/latest -o "$release_json"
+
+tag="$(jq -r '.tag_name // empty' "$release_json")"
+[[ -n "$tag" ]] || fail "could not read latest release tag from GitHub API"
+
+asset_url="$(jq -r --arg name "$asset_name" '.assets[] | select(.name == $name) | .browser_download_url' "$release_json")"
+[[ -n "$asset_url" ]] || fail "release $tag does not contain $asset_name"
+
+asset_digest="$(jq -r --arg name "$asset_name" '.assets[] | select(.name == $name) | .digest // empty' "$release_json")"
+
+log "latest release: $tag"
+log "asset: $asset_name"
+if [[ "$mode" == "check" ]]; then
+  if [[ -n "$asset_digest" ]]; then
+    log "asset digest: $asset_digest"
+  fi
+  exit 0
+fi
+
+log "checking sudo access"
+sudo -v
+
+log "downloading $asset_name"
+curl -fL --progress-bar "$asset_url" -o "$tarball"
+
+if [[ "$asset_digest" == sha256:* ]]; then
+  expected_sha="${asset_digest#sha256:}"
+  actual_sha="$(sha256sum "$tarball" | awk '{print $1}')"
+  [[ "$actual_sha" == "$expected_sha" ]] || fail "sha256 mismatch: expected $expected_sha, got $actual_sha"
+  log "verified sha256: $actual_sha"
+else
+  log "release metadata did not include a sha256 digest; skipping checksum verification"
+fi
+
+log "extracting tarball"
+tar -xzf "$tarball" -C "$tmp"
+root="$tmp/$extract_dir"
+[[ -x "$root/bin/nvim" ]] || fail "extracted archive does not contain executable bin/nvim"
+
+new_version="$("$root/bin/nvim" --version | head -n 1)"
+log "downloaded nvim: $new_version"
+
+timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+backup_dir="/usr/local/nvim-backup-$timestamp"
+log "creating backup under $backup_dir"
+sudo mkdir -p "$backup_dir"
+for path in \
+  bin/nvim \
+  share/nvim \
+  lib/nvim \
+  share/applications/nvim.desktop \
+  share/icons/hicolor/128x128/apps/nvim.png \
+  share/man/man1/nvim.1; do
+  if [[ -e "/usr/local/$path" ]]; then
+    sudo mkdir -p "$backup_dir/$(dirname "$path")"
+    sudo cp -a "/usr/local/$path" "$backup_dir/$path"
+  fi
+done
+
+log "installing into /usr/local"
+sudo install -D -m 0755 "$root/bin/nvim" /usr/local/bin/nvim
+
+sudo rm -rf /usr/local/share/nvim /usr/local/lib/nvim
+sudo mkdir -p /usr/local/share /usr/local/lib
+sudo cp -a "$root/share/nvim" /usr/local/share/nvim
+sudo cp -a "$root/lib/nvim" /usr/local/lib/nvim
+
+sudo install -D -m 0644 "$root/share/applications/nvim.desktop" /usr/local/share/applications/nvim.desktop
+sudo install -D -m 0644 "$root/share/icons/hicolor/128x128/apps/nvim.png" /usr/local/share/icons/hicolor/128x128/apps/nvim.png
+sudo install -D -m 0644 "$root/share/man/man1/nvim.1" /usr/local/share/man/man1/nvim.1
+
+log "installed: $(/usr/local/bin/nvim --version | head -n 1)"
+log "backup kept at: $backup_dir"
