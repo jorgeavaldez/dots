@@ -38,6 +38,7 @@ private-commits = '''description('private:*')'''
 [aliases]
 s = ["st"]
 d = ["diff"]
+dif = ["diff"]
 currbm = ["b", "l", "-r", "current_bookmark"]
 currbm-name = ["b", "l", "-r", "current_bookmark", "-T", "nonremote_bookmark_name"]
 parentbm = ["b", "l", "-r", "current_parent_bookmark"]
