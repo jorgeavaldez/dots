@@ -43,6 +43,7 @@ tree-sitter = "latest"
 yazi = "latest"
 bun = "latest"
 "npm:hunkdiff" = "latest"
+actionlint = "latest"
 
 [settings]
 idiomatic_version_file_enable_tools = ["python"]
