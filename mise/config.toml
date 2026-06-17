@@ -6,6 +6,8 @@ go = "latest"
 java = "latest"
 lua = "latest"
 node = "latest"
+aube = "latest"
+pnpm = "latest"
 "npm:@biomejs/biome" = "latest"
 "npm:mcp-hub" = "latest"
 python = "latest"
@@ -44,6 +46,8 @@ yazi = "latest"
 bun = "latest"
 "npm:hunkdiff" = "latest"
 actionlint = "latest"
+taplo = "latest"
+"npm:@tobilu/qmd" = { version = "latest", allow_builds = ["better-sqlite3", "node-llama-cpp", "tree-sitter-go", "tree-sitter-javascript", "tree-sitter-python", "tree-sitter-rust", "tree-sitter-typescript"] }
 
 [settings]
 idiomatic_version_file_enable_tools = ["python"]
