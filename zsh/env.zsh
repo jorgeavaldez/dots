@@ -1,5 +1,18 @@
 # Shared environment for login and interactive shells.
 
+# Termius/SSH sometimes lands with LANG=C. tmux decides whether the client is
+# UTF-8 from the locale at attach time; non-UTF-8 makes Unicode punctuation and
+# TUI glyphs render as underscores or other fallback garbage.
+if [[ -z "${LC_ALL:-}" || "${LC_ALL:-}" == C || "${LC_ALL:-}" == POSIX ]]; then
+    unset LC_ALL
+fi
+if [[ -z "${LANG:-}" || "${LANG:-}" == C || "${LANG:-}" == POSIX ]]; then
+    export LANG=en_US.UTF-8
+fi
+if [[ -z "${LC_CTYPE:-}" || "${LC_CTYPE:-}" == C || "${LC_CTYPE:-}" == POSIX ]]; then
+    export LC_CTYPE=en_US.UTF-8
+fi
+
 if [[ -n "${DOTS_ZSH_ENV_LOADED:-}" ]]; then
     return 0
 fi
