@@ -6,19 +6,18 @@ go = "latest"
 java = "latest"
 lua = "latest"
 node = "latest"
+# another npm client, mise uses it, jdx made it
 aube = "latest"
 pnpm = "latest"
 "npm:@biomejs/biome" = "latest"
-"npm:mcp-hub" = "latest"
 python = "latest"
 rust = "latest"
 uv = "latest"
-"npm:@google/gemini-cli" = "latest"
-"npm:@forge/cli" = "latest"
 "npm:@mermaid-js/mermaid-cli" = "latest"
 "npm:@openai/codex" = "latest"
 yamlfmt = "latest"
 yq = "latest"
+# tv - fuzzy finder
 television = "latest"
 "npm:@earendil-works/pi-coding-agent" = { version = "latest", allow_builds = [
   "@google/genai",
@@ -26,6 +25,7 @@ television = "latest"
 ] }
 tmux = "latest"
 pitchfork = "latest"
+# gh cli
 "aqua:cli/cli" = "2.87.3"
 "npm:@steipete/summarize" = "latest"
 "npm:prettier" = "latest"
@@ -47,6 +47,7 @@ delta = "latest"
 tree-sitter = "latest"
 yazi = "latest"
 bun = "latest"
+# another diff viewer
 "npm:hunkdiff" = "latest"
 actionlint = "latest"
 taplo = "latest"
