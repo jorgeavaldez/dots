@@ -3,3 +3,4 @@ zsh/private.zsh
 secrets.sh
 .DS_Store
 .aider*
+mise/config.local.toml
