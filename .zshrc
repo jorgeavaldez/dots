@@ -87,6 +87,10 @@ alias ezsh="nvim $HOME/.zshrc"
 alias reload="source $HOME/.zshrc"
 alias evim="nvim $HOME/.config/nvim/init.lua"
 
+alias h="herdr"
+alias hrd="herdr"
+alias hd="herdr"
+
 function mise-use-private() {
     local config_path="$HOME/.config/mise.toml"
 
