@@ -60,6 +60,7 @@ taplo = "latest"
   "tree-sitter-typescript",
 ] }
 cloudflared = "latest"
+herdr = "latest"
 
 [settings]
 idiomatic_version_file_enable_tools = ["python"]

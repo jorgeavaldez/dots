@@ -5,16 +5,16 @@
 set -Eeuo pipefail
 
 log() {
-  printf '[debian-update-nvim] %s\n' "$*"
+    printf '[debian-update-nvim] %s\n' "$*"
 }
 
 fail() {
-  printf '[debian-update-nvim] ERROR: %s\n' "$*" >&2
-  exit 1
+    printf '[debian-update-nvim] ERROR: %s\n' "$*" >&2
+    exit 1
 }
 
 usage() {
-  cat <<'USAGE'
+    cat <<'USAGE'
 Usage: debian-update-nvim [--check]
 
 Update the locally installed Neovim release tarball under /usr/local.
@@ -26,59 +26,59 @@ USAGE
 }
 
 require_command() {
-  command -v "$1" >/dev/null 2>&1 || fail "missing required command: $1"
+    command -v "$1" >/dev/null 2>&1 || fail "missing required command: $1"
 }
 
 tmp=""
 cleanup() {
-  if [[ -n "$tmp" && -d "$tmp" ]]; then
-    rm -rf "$tmp"
-  fi
+    if [[ -n "$tmp" && -d "$tmp" ]]; then
+        rm -rf "$tmp"
+    fi
 }
 trap cleanup EXIT
 
 mode="install"
 case "${1:-}" in
-  "")
-    ;;
-  --check)
-    mode="check"
-    ;;
-  -h|--help)
-    usage
-    exit 0
-    ;;
-  *)
-    fail "unexpected argument: $1"
-    ;;
+    "")
+        ;;
+    --check)
+        mode="check"
+        ;;
+    -h | --help)
+        usage
+        exit 0
+        ;;
+    *)
+        fail "unexpected argument: $1"
+        ;;
 esac
 [[ $# -le 1 ]] || fail "too many arguments"
 
 required_commands=(curl jq)
 if [[ "$mode" == "install" ]]; then
-  required_commands+=(tar sha256sum sudo install)
+    required_commands+=(tar sha256sum sudo install)
 fi
 for cmd in "${required_commands[@]}"; do
-  require_command "$cmd"
+    require_command "$cmd"
 done
 
 case "$(uname -m)" in
-  x86_64|amd64)
-    asset_name="nvim-linux-x86_64.tar.gz"
-    extract_dir="nvim-linux-x86_64"
-    ;;
-  aarch64|arm64)
-    asset_name="nvim-linux-arm64.tar.gz"
-    extract_dir="nvim-linux-arm64"
-    ;;
-  *)
-    fail "unsupported architecture: $(uname -m)"
-    ;;
+    x86_64 | amd64)
+        asset_name="nvim-linux-x86_64.tar.gz"
+        extract_dir="nvim-linux-x86_64"
+        ;;
+    aarch64 | arm64)
+        asset_name="nvim-linux-arm64.tar.gz"
+        extract_dir="nvim-linux-arm64"
+        ;;
+    *)
+        fail "unsupported architecture: $(uname -m)"
+        ;;
 esac
 
 current_version="not installed"
 if command -v nvim >/dev/null 2>&1; then
-  current_version="$(nvim --version | head -n 1)"
+    current_version="$(nvim --version | head -n 1)"
 fi
 log "current nvim: $current_version"
 
@@ -100,10 +100,10 @@ asset_digest="$(jq -r --arg name "$asset_name" '.assets[] | select(.name == $nam
 log "latest release: $tag"
 log "asset: $asset_name"
 if [[ "$mode" == "check" ]]; then
-  if [[ -n "$asset_digest" ]]; then
-    log "asset digest: $asset_digest"
-  fi
-  exit 0
+    if [[ -n "$asset_digest" ]]; then
+        log "asset digest: $asset_digest"
+    fi
+    exit 0
 fi
 
 log "checking sudo access"
@@ -113,12 +113,12 @@ log "downloading $asset_name"
 curl -fL --progress-bar "$asset_url" -o "$tarball"
 
 if [[ "$asset_digest" == sha256:* ]]; then
-  expected_sha="${asset_digest#sha256:}"
-  actual_sha="$(sha256sum "$tarball" | awk '{print $1}')"
-  [[ "$actual_sha" == "$expected_sha" ]] || fail "sha256 mismatch: expected $expected_sha, got $actual_sha"
-  log "verified sha256: $actual_sha"
+    expected_sha="${asset_digest#sha256:}"
+    actual_sha="$(sha256sum "$tarball" | awk '{print $1}')"
+    [[ "$actual_sha" == "$expected_sha" ]] || fail "sha256 mismatch: expected $expected_sha, got $actual_sha"
+    log "verified sha256: $actual_sha"
 else
-  log "release metadata did not include a sha256 digest; skipping checksum verification"
+    log "release metadata did not include a sha256 digest; skipping checksum verification"
 fi
 
 log "extracting tarball"
@@ -134,16 +134,16 @@ backup_dir="/usr/local/nvim-backup-$timestamp"
 log "creating backup under $backup_dir"
 sudo mkdir -p "$backup_dir"
 for path in \
-  bin/nvim \
-  share/nvim \
-  lib/nvim \
-  share/applications/nvim.desktop \
-  share/icons/hicolor/128x128/apps/nvim.png \
-  share/man/man1/nvim.1; do
-  if [[ -e "/usr/local/$path" ]]; then
-    sudo mkdir -p "$backup_dir/$(dirname "$path")"
-    sudo cp -a "/usr/local/$path" "$backup_dir/$path"
-  fi
+    bin/nvim \
+    share/nvim \
+    lib/nvim \
+    share/applications/nvim.desktop \
+    share/icons/hicolor/128x128/apps/nvim.png \
+    share/man/man1/nvim.1; do
+    if [[ -e "/usr/local/$path" ]]; then
+        sudo mkdir -p "$backup_dir/$(dirname "$path")"
+        sudo cp -a "/usr/local/$path" "$backup_dir/$path"
+    fi
 done
 
 log "installing into /usr/local"
