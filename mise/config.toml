@@ -19,7 +19,7 @@ yamlfmt = "latest"
 yq = "latest"
 # tv - fuzzy finder
 television = "latest"
-"npm:@earendil-works/pi-coding-agent" = { version = "latest", allow_builds = ["@google/genai", "protobufjs"] }
+"github:earendil-works/pi" = "latest"
 tmux = "latest"
 pitchfork = "latest"
 # gh cli
@@ -60,6 +60,7 @@ cloudflared = "latest"
 herdr = "latest"
 "github:openclaw/gogcli" = "latest"
 gcloud = "latest"
+"cargo:jj-hunk" = "latest"
 
 [settings]
 idiomatic_version_file_enable_tools = ["python"]
