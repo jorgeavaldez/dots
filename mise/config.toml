@@ -19,7 +19,7 @@ yamlfmt = "latest"
 yq = "latest"
 # tv - fuzzy finder
 television = "latest"
-"github:earendil-works/pi" = "latest"
+"github:earendil-works/pi" = { version = "latest", minimum_release_age = "6h" }
 tmux = "latest"
 pitchfork = "latest"
 # gh cli
