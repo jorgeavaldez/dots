@@ -173,7 +173,14 @@ function rmnodemodules() {
     find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +
 }
 
-if [[ "$(uname)" == "Linux" ]]; then
+if [[ -n "${TERMUX_VERSION:-}" ]]; then
+    function pbcopy() {
+        termux-clipboard-set
+    }
+    function pbpaste() {
+        termux-clipboard-get
+    }
+elif [[ "$(uname)" == "Linux" ]]; then
     function pbcopy() {
         xclip -selection clipboard
     }
@@ -315,12 +322,18 @@ fi
 # this is a vscode plugin for a fuzzy search w/ ripgrep that mimics telescope in neovim
 # unfortunately it doesn't like some of these shell hooks so i disable them to get a faster startup
 if [[ $FIND_IT_FASTER_ACTIVE -eq 0 ]]; then
-    eval "$(atuin init zsh)"
-    eval "$(zoxide init zsh)"
+    if command -v atuin >/dev/null 2>&1; then
+        eval "$(atuin init zsh)"
+    fi
+    if command -v zoxide >/dev/null 2>&1; then
+        eval "$(zoxide init zsh)"
+    fi
     if [[ -f "$HOME/dots/zsh/mise.zsh" ]]; then
         source "$HOME/dots/zsh/mise.zsh"
     fi
-    eval "$(starship init zsh)"
+    if command -v starship >/dev/null 2>&1; then
+        eval "$(starship init zsh)"
+    fi
 fi
 
 # completions

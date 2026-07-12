@@ -3,14 +3,22 @@
 # Termius/SSH sometimes lands with LANG=C. tmux decides whether the client is
 # UTF-8 from the locale at attach time; non-UTF-8 makes Unicode punctuation and
 # TUI glyphs render as underscores or other fallback garbage.
-if [[ -z "${LC_ALL:-}" || "${LC_ALL:-}" == C || "${LC_ALL:-}" == POSIX ]]; then
+if [[ -n "${TERMUX_VERSION:-}" ]]; then
+    # Android's Bionic libc supports en_US.UTF-8 directly; locale-gen is neither
+    # available nor necessary in Termux.
     unset LC_ALL
-fi
-if [[ -z "${LANG:-}" || "${LANG:-}" == C || "${LANG:-}" == POSIX ]]; then
     export LANG=en_US.UTF-8
-fi
-if [[ -z "${LC_CTYPE:-}" || "${LC_CTYPE:-}" == C || "${LC_CTYPE:-}" == POSIX ]]; then
     export LC_CTYPE=en_US.UTF-8
+else
+    if [[ -z "${LC_ALL:-}" || "${LC_ALL:-}" == C || "${LC_ALL:-}" == POSIX ]]; then
+        unset LC_ALL
+    fi
+    if [[ -z "${LANG:-}" || "${LANG:-}" == C || "${LANG:-}" == POSIX ]]; then
+        export LANG=en_US.UTF-8
+    fi
+    if [[ -z "${LC_CTYPE:-}" || "${LC_CTYPE:-}" == C || "${LC_CTYPE:-}" == POSIX ]]; then
+        export LC_CTYPE=en_US.UTF-8
+    fi
 fi
 
 if [[ -n "${DOTS_ZSH_ENV_LOADED:-}" ]]; then
@@ -20,7 +28,7 @@ DOTS_ZSH_ENV_LOADED=1
 
 # I like to use 1password to manage my ssh keys.
 # Typically I bypass this by restarting the ssh agent manually.
-if [[ ! -S "${SSH_AUTH_SOCK:-}" && "$(uname)" == "Linux" ]]; then
+if [[ -z "${TERMUX_VERSION:-}" && ! -S "${SSH_AUTH_SOCK:-}" && "$(uname)" == "Linux" ]]; then
     export SSH_AUTH_SOCK="$HOME/.1password/agent.sock"
 fi
 

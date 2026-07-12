@@ -1,0 +1,24 @@
+[tools]
+node = "latest"
+python = "latest"
+go = "latest"
+rust = "latest"
+pnpm = "latest"
+"npm:prettier" = "latest"
+starship = "latest"
+zoxide = "latest"
+ripgrep = "latest"
+fd = "latest"
+eza = "latest"
+jq = "latest"
+delta = "latest"
+jj = "latest"
+neovim = "latest"
+tmux = "latest"
+
+[settings]
+libc = "musl"
+experimental = true
+
+[settings.python]
+uv_venv_auto = "source"
