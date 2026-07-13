@@ -7,6 +7,11 @@ if [[ -z "${TERMUX_VERSION:-}" || "${PREFIX:-}" != */com.termux/files/usr ]]; th
     exit 1
 fi
 
+if [[ "$(uname -m)" != "aarch64" ]]; then
+    echo "This installer currently supports only ARM64 Termux devices." >&2
+    exit 1
+fi
+
 DOTS_DIR="$(cd "$(dirname "$0")" && pwd)"
 FORCE=false
 if [[ "${1:-}" == "--force" ]]; then
@@ -17,19 +22,30 @@ elif [[ $# -gt 0 ]]; then
 fi
 
 pkg update
-pkg uninstall -y nodejs python rust 2>/dev/null || true
-pkg install -y bash build-essential coreutils curl diffutils file gdbm git git-delta gnupg jq libandroid-posix-semaphore libandroid-support libbz2 libcrypt libexpat libffi liblzma libsqlite mise ncurses ncurses-ui-libs ncurses-utils openssl openssh pkg-config proot readline ripgrep termux-api zlib zsh
-pkg install -y glibc-repo
-pkg install -y glibc-runner
+xargs pkg install -y <"$DOTS_DIR/termux/packages.txt"
+xargs npm install --global --ignore-scripts <"$DOTS_DIR/termux/npm-packages.txt"
 
-mkdir -p "$HOME/.config/mise" "$HOME/.config/jj"
+mkdir -p "$HOME/.config/jj" "$HOME/.local/bin"
+
+jj_url="$(curl -fsSL https://api.github.com/repos/jj-vcs/jj/releases/latest |
+    jq -er '.assets[] | select(.name | test("aarch64-unknown-linux-musl\\.tar\\.gz$")) | .browser_download_url' |
+    head -n 1)"
+jj_tmp="$(mktemp -d)"
+trap 'rm -rf "$jj_tmp"' EXIT
+curl -fsSL "$jj_url" -o "$jj_tmp/jj.tar.gz"
+tar -xzf "$jj_tmp/jj.tar.gz" -C "$jj_tmp"
+jj_binary="$(find "$jj_tmp" -type f -name jj -perm -u+x -print -quit)"
+if [[ -z "$jj_binary" ]]; then
+    echo "The Jujutsu release archive did not contain an executable named jj." >&2
+    exit 1
+fi
+install -m 755 "$jj_binary" "$HOME/.local/bin/jj"
 
 links=(
     "$DOTS_DIR/.zshrc:$HOME/.zshrc"
     "$DOTS_DIR/.zprofile:$HOME/.zprofile"
     "$DOTS_DIR/.tmux.conf:$HOME/.tmux.conf"
     "$DOTS_DIR/starship.toml:$HOME/.config/starship.toml"
-    "$DOTS_DIR/mise/config.android.toml:$HOME/.config/mise/config.toml"
     "$DOTS_DIR/jj/config.toml:$HOME/.config/jj/config.toml"
     "$DOTS_DIR/git/config:$HOME/.gitconfig"
 )
@@ -57,51 +73,9 @@ for pair in "${links[@]}"; do
     ln -s "$src" "$dest"
 done
 
-# Running from ~/dots would also load ~/dots/mise/config.toml as a project
-# config and merge the desktop tool list into the Android installation. The
-# proot bindings let mise install and verify standard ARM64 glibc toolchains;
-# wrappers keep those toolchains inside the same compatibility boundary later.
-(
-    cd "$HOME"
-    proot \
-        -b "$PREFIX/bin:/bin" \
-        -b "$PREFIX/bin:/usr/bin" \
-        -b "$PREFIX/etc/resolv.conf:/etc/resolv.conf" \
-        -b "$PREFIX/etc/tls/cert.pem:/etc/ssl/certs/ca-certificates.crt" \
-        -b "$PREFIX/glibc/lib:/lib" \
-        env -u LD_PRELOAD \
-        MISE_LIBC=glibc \
-        MISE_OS=linux \
-        mise install
-)
-
-for runtime in node python rust; do
-    install_root="$HOME/.local/share/mise/installs/$runtime"
-    [[ -d "$install_root" ]] || continue
-    while IFS= read -r -d '' executable; do
-        [[ "$executable" == *.termux-glibc ]] && continue
-        if file "$executable" | grep -q 'ELF.*dynamically linked'; then
-            real_executable="$executable.termux-glibc"
-            mv "$executable" "$real_executable"
-            cat >"$executable" <<EOF
-#!/data/data/com.termux/files/usr/bin/bash
-exec proot \\
-    -b "\$PREFIX/bin:/bin" \\
-    -b "\$PREFIX/bin:/usr/bin" \\
-    -b "\$PREFIX/etc/resolv.conf:/etc/resolv.conf" \\
-    -b "\$PREFIX/etc/tls/cert.pem:/etc/ssl/certs/ca-certificates.crt" \\
-    -b "\$PREFIX/glibc/lib:/lib" \\
-    env -u LD_PRELOAD \\
-    "$real_executable" "\$@"
-EOF
-            chmod +x "$executable"
-        fi
-    done < <(find "$install_root" -type f -perm -u+x -print0)
-done
-
 if [[ "${SHELL:-}" != "$PREFIX/bin/zsh" ]]; then
     echo ""
     echo "Set zsh as your Termux login shell with: chsh -s zsh"
 fi
 
-echo "Termux dotfiles installed. Restart the shell to load them."
+echo "Termux dotfiles and essential tools installed. Restart the shell to load them."

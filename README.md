@@ -39,9 +39,9 @@ cd ~/dots
 ./install.android.sh
 ```
 
-The Android installer verifies that it is running in Termux, installs only the native bootstrap and Android-integration packages with `pkg`, then links the shared shell, tmux, Starship, Jujutsu, and Git configuration. Termux's native mise package manages the language toolchains and portable CLI tools declared in `mise/config.android.toml`, which is linked as `~/.config/mise/config.toml`. Existing files are preserved unless you explicitly run `./install.android.sh --force`.
+The Android installer supports ARM64 Termux devices. It installs the native packages listed in `termux/packages.txt`, installs the npm packages in `termux/npm-packages.txt`, downloads the latest ARM64 musl Jujutsu release, and links the shared shell, tmux, Starship, Jujutsu, and Git configuration. Pi is installed through its officially supported Termux setup on native Termux Node.js. Existing files are preserved unless you explicitly run `./install.android.sh --force`.
 
-Android uses Bionic rather than glibc. Bionic directly recognizes `en_US.UTF-8`, so no locale package or `locale-gen` step is needed. The Android mise config manages Node.js, Python, Go, Rust, pnpm, tmux, eza, and compatible Android or static ARM64 musl builds of Starship, Zoxide, fd, and Jujutsu. Node.js, Python, and Rust are installed as standard ARM64 Linux toolchains inside a small `proot` compatibility boundary, then wrapped so they run through Termux's glibc loader; no language runtime is installed through `pkg`. Termux packages provide only the shell, build libraries, Git/SSH, mise itself, glibc compatibility, native CLI tools without compatible upstream assets, terminfo tooling, and Termux API integration.
+The installer deliberately does not install or configure mise, glibc compatibility, proot, or managed language toolchains. Android's Bionic libc directly recognizes `en_US.UTF-8`, so no locale package or `locale-gen` step is needed. On Termux, keychain starts or reuses an SSH agent and loads `~/.ssh/id_ed25519` when the shell starts.
 
 ## shell formatting
 

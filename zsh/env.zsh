@@ -26,9 +26,12 @@ if [[ -n "${DOTS_ZSH_ENV_LOADED:-}" ]]; then
 fi
 DOTS_ZSH_ENV_LOADED=1
 
-# I like to use 1password to manage my ssh keys.
-# Typically I bypass this by restarting the ssh agent manually.
-if [[ -z "${TERMUX_VERSION:-}" && ! -S "${SSH_AUTH_SOCK:-}" && "$(uname)" == "Linux" ]]; then
+if [[ -n "${TERMUX_VERSION:-}" ]]; then
+    if command -v keychain >/dev/null 2>&1 && [[ -f "$HOME/.ssh/id_ed25519" ]]; then
+        eval "$(keychain --eval --quiet id_ed25519)"
+    fi
+# I like to use 1password to manage my ssh keys on desktop Linux.
+elif [[ ! -S "${SSH_AUTH_SOCK:-}" && "$(uname)" == "Linux" ]]; then
     export SSH_AUTH_SOCK="$HOME/.1password/agent.sock"
 fi
 
