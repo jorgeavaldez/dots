@@ -17,10 +17,10 @@ elif [[ $# -gt 0 ]]; then
 fi
 
 pkg update
+pkg uninstall -y nodejs python rust 2>/dev/null || true
 pkg install -y bash build-essential coreutils curl diffutils file gdbm git git-delta gnupg jq libandroid-posix-semaphore libandroid-support libbz2 libcrypt libexpat libffi liblzma libsqlite mise ncurses ncurses-ui-libs ncurses-utils openssl openssh pkg-config proot readline ripgrep termux-api zlib zsh
 pkg install -y glibc-repo
 pkg install -y glibc-runner
-pkg uninstall -y nodejs python rust 2>/dev/null || true
 
 mkdir -p "$HOME/.config/mise" "$HOME/.config/jj"
 
@@ -68,9 +68,8 @@ done
         -b "$PREFIX/bin:/usr/bin" \
         -b "$PREFIX/etc/resolv.conf:/etc/resolv.conf" \
         -b "$PREFIX/etc/tls/cert.pem:/etc/ssl/certs/ca-certificates.crt" \
-        -b "$PREFIX/glibc/lib/ld-linux-aarch64.so.1:/lib/ld-linux-aarch64.so.1" \
+        -b "$PREFIX/glibc/lib:/lib" \
         env -u LD_PRELOAD \
-        LD_LIBRARY_PATH="$PREFIX/glibc/lib" \
         MISE_LIBC=glibc \
         MISE_OS=linux \
         mise install
@@ -91,8 +90,8 @@ exec proot \\
     -b "\$PREFIX/bin:/usr/bin" \\
     -b "\$PREFIX/etc/resolv.conf:/etc/resolv.conf" \\
     -b "\$PREFIX/etc/tls/cert.pem:/etc/ssl/certs/ca-certificates.crt" \\
-    -b "\$PREFIX/glibc/lib/ld-linux-aarch64.so.1:/lib/ld-linux-aarch64.so.1" \\
-    env -u LD_PRELOAD LD_LIBRARY_PATH="\$PREFIX/glibc/lib" \\
+    -b "\$PREFIX/glibc/lib:/lib" \\
+    env -u LD_PRELOAD \\
     "$real_executable" "\$@"
 EOF
             chmod +x "$executable"
