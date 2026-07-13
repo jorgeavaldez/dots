@@ -54,7 +54,12 @@ for pair in "${links[@]}"; do
     ln -s "$src" "$dest"
 done
 
-mise install
+# Running from ~/dots would also load ~/dots/mise/config.toml as a project
+# config and merge the desktop tool list into the Android installation.
+(
+    cd "$HOME"
+    mise install
+)
 
 if [[ "${SHELL:-}" != "$PREFIX/bin/zsh" ]]; then
     echo ""
