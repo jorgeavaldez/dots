@@ -27,7 +27,7 @@ fi
 DOTS_ZSH_ENV_LOADED=1
 
 if [[ -n "${TERMUX_VERSION:-}" ]]; then
-    if command -v keychain >/dev/null 2>&1 && [[ -f "$HOME/.ssh/id_ed25519" ]]; then
+    if [[ -o interactive ]] && command -v keychain >/dev/null 2>&1 && [[ -f "$HOME/.ssh/id_ed25519" ]]; then
         eval "$(keychain --eval --quiet id_ed25519)"
     fi
 # I like to use 1password to manage my ssh keys on desktop Linux.
