@@ -11,9 +11,11 @@ keychain
 neovim
 nodejs
 openssh
+proot
 ripgrep
 starship
 termux-api
 tmux
+util-linux
 zoxide
 zsh

@@ -25,7 +25,8 @@ pkg update
 xargs pkg install -y <"$DOTS_DIR/termux/packages.txt"
 xargs npm install --global --ignore-scripts <"$DOTS_DIR/termux/npm-packages.txt"
 
-mkdir -p "$HOME/.config/jj" "$HOME/.local/bin"
+mkdir -p "$HOME/.config/jj" "$HOME/.local/bin" "$HOME/.local/libexec"
+install -d -m 700 "$HOME/.local/share/jj-android/workspaces"
 
 jj_url="$(curl -fsSL https://api.github.com/repos/jj-vcs/jj/releases/latest |
     jq -er '.assets[] | select(.name | test("aarch64-unknown-linux-musl\\.tar\\.gz$")) | .browser_download_url' |
@@ -39,7 +40,7 @@ if [[ -z "$jj_binary" ]]; then
     echo "The Jujutsu release archive did not contain an executable named jj." >&2
     exit 1
 fi
-install -m 755 "$jj_binary" "$HOME/.local/bin/jj"
+install -m 755 "$jj_binary" "$HOME/.local/libexec/jj"
 
 links=(
     "$DOTS_DIR/.zshrc:$HOME/.zshrc"
@@ -48,6 +49,7 @@ links=(
     "$DOTS_DIR/starship.toml:$HOME/.config/starship.toml"
     "$DOTS_DIR/jj/config.toml:$HOME/.config/jj/config.toml"
     "$DOTS_DIR/git/config:$HOME/.gitconfig"
+    "$DOTS_DIR/termux/jj-wrapper.sh:$HOME/.local/bin/jj"
 )
 
 if [[ "$FORCE" != true ]]; then
