@@ -21,6 +21,10 @@ else
     fi
 fi
 
+if [[ -f "$HOME/dots/zsh/colima-testcontainers.zsh" ]]; then
+    source "$HOME/dots/zsh/colima-testcontainers.zsh"
+fi
+
 if [[ -n "${DOTS_ZSH_ENV_LOADED:-}" ]]; then
     return 0
 fi

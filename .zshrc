@@ -186,12 +186,6 @@ elif [[ "$(uname)" == "Linux" ]]; then
     }
 fi
 
-# Colima/Testcontainers configuration for macOS.
-# Kept in a separate file to isolate the startup-specific logic.
-if [[ -f "$HOME/dots/zsh/colima-testcontainers.zsh" ]]; then
-    source "$HOME/dots/zsh/colima-testcontainers.zsh"
-fi
-
 function rename-go-mod() {
     find . -name '*.go' -print0 |
         xargs -0 sed -i -e "s|$1|$2|"
