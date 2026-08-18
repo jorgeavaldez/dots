@@ -63,7 +63,7 @@ case ":$PATH:" in
 esac
 
 if [ -d /opt/homebrew/bin ]; then export PATH="/opt/homebrew/bin:$PATH"; fi
-if [ -d /opt/homebrew/opt/postgresql@17/bin ]; then export PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH"; fi
+if [ -d /opt/homebrew/opt/libpq/bin ]; then export PATH="/opt/homebrew/opt/libpq/bin:$PATH"; fi
 
 if [ -f "$HOME/.cargo/env" ]; then
     . "$HOME/.cargo/env"
