@@ -138,6 +138,7 @@ install_wezterm_terminfo() {
 mkdir -p ~/.config/opencode
 mkdir -p ~/.config/jj
 mkdir -p ~/.config/herdr
+mkdir -p ~/.config/zellij
 
 prepare_mise_dir
 
@@ -151,6 +152,7 @@ safe_link_dir "$DOTS_DIR/wezterm" ~/.config/wezterm
 safe_link_dir "$DOTS_DIR/mise" ~/.config/mise
 safe_link "$DOTS_DIR/jj/config.toml" ~/.config/jj/config.toml
 safe_link "$DOTS_DIR/herdr/config.toml" ~/.config/herdr/config.toml
+safe_link "$DOTS_DIR/zellij/config.kdl" ~/.config/zellij/config.kdl
 safe_link "$DOTS_DIR/git/config" ~/.gitconfig
 
 install_wezterm_terminfo

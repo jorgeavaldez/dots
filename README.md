@@ -25,6 +25,7 @@ This will symlink:
 - `wezterm/` → `~/.config/wezterm`
 - `mise/` → `~/.config/mise`
 - `jj/config.toml` → `~/.config/jj/config.toml`
+- `zellij/config.kdl` → `~/.config/zellij/config.kdl`
 - `git/config` → `~/.gitconfig`
 
 It also downloads the latest WezTerm terminfo definitions from upstream and installs them into `~/.terminfo` so tools like `less` work when `TERM=wezterm`.
