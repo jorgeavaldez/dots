@@ -43,7 +43,7 @@ cd ~/dots
 ./install.android.sh
 ```
 
-The Android installer supports ARM64 Termux devices. It installs the native packages listed in `termux/packages.txt`, installs the npm packages in `termux/npm-packages.txt`, downloads the latest ARM64 musl Jujutsu release, and links the shared shell, tmux, Starship, Jujutsu, and Git configuration. Pi is installed through its officially supported Termux setup on native Termux Node.js. Existing files are preserved unless you explicitly run `./install.android.sh --force`.
+The Android installer supports ARM64 Termux devices. It installs the native packages listed in `termux/packages.txt`, installs the npm packages in `termux/npm-packages.txt`, installs Herdr through its official installer, downloads the latest ARM64 musl Jujutsu release, and links the shared shell, tmux, Starship, Jujutsu, and Git configuration. Pi is installed through its officially supported Termux setup on native Termux Node.js. Existing files are preserved unless you explicitly run `./install.android.sh --force`.
 
 The installer deliberately does not install or configure mise, glibc compatibility, a PRoot Linux distribution, or managed language toolchains. It installs the small `proot` package only for the Jujutsu shared-storage wrapper described below. Android's Bionic libc directly recognizes `en_US.UTF-8`, so no locale package or `locale-gen` step is needed. Termux uses the same shared `keychain` behavior described above.
 

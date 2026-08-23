@@ -4,6 +4,7 @@ curl
 diffutils
 eza
 fd
+gh
 git
 git-delta
 jq

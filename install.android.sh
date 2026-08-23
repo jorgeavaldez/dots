@@ -24,6 +24,7 @@ fi
 pkg update
 xargs pkg install -y <"$DOTS_DIR/termux/packages.txt"
 xargs npm install --global --ignore-scripts <"$DOTS_DIR/termux/npm-packages.txt"
+curl -fsSL https://herdr.dev/install.sh | HERDR_INSTALL_DIR="$HOME/.local/bin" sh
 
 mkdir -p "$HOME/.config/jj" "$HOME/.local/bin" "$HOME/.local/libexec"
 install -d -m 700 "$HOME/.local/share/jj-android/workspaces"
