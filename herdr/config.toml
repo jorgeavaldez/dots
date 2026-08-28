@@ -189,6 +189,7 @@ prompt_new_tab_name = false
 # Background notification popup delivery
 show_agent_labels_on_pane_borders = true
 agent_panel_sort = "priority"
+status_indicators = "symbols"
 [ui.toast]
 # off = disable pop-up notifications
 # herdr = show in-app toasts
@@ -216,6 +217,9 @@ delivery = "terminal"
 # By default, droid is muted.
 # [ui.sound.agents]
 # droid = "off"
+
+[ui.sidebar.agents.rows_by_agent]
+pi = [["state_icon", "workspace", "tab"], ["agent", "$compaction"]]
 
 [ui.sidebar.spaces]
 rows = [["state_icon", "workspace"], ["branch", "git_status"]]
