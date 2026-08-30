@@ -3,6 +3,7 @@
 !.ignore
 !.tmux.conf
 !.gitignore
+!.zshenv
 !.zshrc
 !.zprofile
 

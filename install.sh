@@ -143,6 +143,7 @@ mkdir -p ~/.config/zellij
 prepare_mise_dir
 
 # Symlink dotfiles
+safe_link "$DOTS_DIR/.zshenv" ~/.zshenv
 safe_link "$DOTS_DIR/.zshrc" ~/.zshrc
 safe_link "$DOTS_DIR/.zprofile" ~/.zprofile
 safe_link "$DOTS_DIR/.tmux.conf" ~/.tmux.conf

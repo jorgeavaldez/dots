@@ -30,13 +30,11 @@ if [[ -n "${DOTS_ZSH_ENV_LOADED:-}" ]]; then
 fi
 DOTS_ZSH_ENV_LOADED=1
 
-if [[ -n "${TERMUX_VERSION:-}" ]]; then
-    if [[ -o interactive ]] && command -v keychain >/dev/null 2>&1 && [[ -f "$HOME/.ssh/id_ed25519" ]]; then
-        eval "$(keychain --eval --quiet id_ed25519)"
-    fi
-# I like to use 1password to manage my ssh keys on desktop Linux.
-elif [[ ! -S "${SSH_AUTH_SOCK:-}" && "$(uname)" == "Linux" ]]; then
-    export SSH_AUTH_SOCK="$HOME/.1password/agent.sock"
+# Non-interactive Zsh sessions reuse this agent through ~/.zshenv. Only an
+# interactive shell may start it or request the private key passphrase.
+if [[ -o interactive && "$OSTYPE" == linux* && ! -S "${SSH_AUTH_SOCK:-}" ]] &&
+    command -v keychain >/dev/null 2>&1 && [[ -f "$HOME/.ssh/id_ed25519" ]]; then
+    eval "$(keychain --eval --quiet id_ed25519)"
 fi
 
 export EDITOR="nvim"

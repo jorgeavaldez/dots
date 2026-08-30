@@ -43,6 +43,7 @@ fi
 install -m 755 "$jj_binary" "$HOME/.local/libexec/jj"
 
 links=(
+    "$DOTS_DIR/.zshenv:$HOME/.zshenv"
     "$DOTS_DIR/.zshrc:$HOME/.zshrc"
     "$DOTS_DIR/.zprofile:$HOME/.zprofile"
     "$DOTS_DIR/.tmux.conf:$HOME/.tmux.conf"
