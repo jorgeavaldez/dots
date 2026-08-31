@@ -27,6 +27,7 @@ SVDIR="$PREFIX/var/service" LOGDIR="$PREFIX/var/log" service-daemon start >/dev/
 SVDIR="$PREFIX/var/service" sv-enable ssh-agent
 xargs npm install --global --ignore-scripts <"$DOTS_DIR/termux/npm-packages.txt"
 curl -fsSL https://herdr.dev/install.sh | HERDR_INSTALL_DIR="$HOME/.local/bin" sh
+"$HOME/.local/bin/herdr" plugin link "$DOTS_DIR/termux/herdr-notifications" --enabled >/dev/null
 
 mkdir -p "$HOME/.config/jj" "$HOME/.local/bin" "$HOME/.local/libexec"
 install -d -m 700 "$HOME/.local/share/jj-android/workspaces"

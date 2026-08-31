@@ -1,0 +1,10 @@
+id = "dots.termux-notifications"
+name = "Termux Agent Notifications"
+version = "0.1.0"
+min_herdr_version = "0.7.0"
+description = "Send an Android notification when a Herdr agent finishes"
+platforms = ["linux"]
+
+[[events]]
+on = "pane.agent_status_changed"
+command = ["bash", "notify-agent-finished.sh"]
