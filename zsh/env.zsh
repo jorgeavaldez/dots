@@ -32,7 +32,26 @@ DOTS_ZSH_ENV_LOADED=1
 
 # Non-interactive Zsh sessions reuse this agent through ~/.zshenv. Only an
 # interactive shell may start it or request the private key passphrase.
-if [[ -o interactive && "$OSTYPE" == linux* && ! -S "${SSH_AUTH_SOCK:-}" ]] &&
+if [[ -o interactive && -n "${TERMUX_VERSION:-}" ]]; then
+    termux_ssh_auth_sock="$PREFIX/var/run/ssh-agent.socket"
+    if [[ -n "${SSH_AGENT_PID:-}" || ! -S "${SSH_AUTH_SOCK:-}" ]]; then
+        if [[ ! -S "$termux_ssh_auth_sock" ]] && command -v sv >/dev/null 2>&1; then
+            SVDIR="$PREFIX/var/service" sv start ssh-agent >/dev/null 2>&1
+        fi
+        if [[ -S "$termux_ssh_auth_sock" ]]; then
+            export SSH_AUTH_SOCK="$termux_ssh_auth_sock"
+            unset SSH_AGENT_PID
+        elif [[ ! -S "${SSH_AUTH_SOCK:-}" ]]; then
+            unset SSH_AUTH_SOCK SSH_AGENT_PID
+        fi
+    fi
+    if [[ "${SSH_AUTH_SOCK:-}" == "$termux_ssh_auth_sock" ]] &&
+        command -v keychain >/dev/null 2>&1 && [[ -f "$HOME/.ssh/id_ed25519" ]]; then
+        unset SSH_AGENT_PID
+        eval "$(keychain --eval --quiet --ssh-allow-forwarded id_ed25519)"
+    fi
+    unset termux_ssh_auth_sock
+elif [[ -o interactive && "$OSTYPE" == linux* && ! -S "${SSH_AUTH_SOCK:-}" ]] &&
     command -v keychain >/dev/null 2>&1 && [[ -f "$HOME/.ssh/id_ed25519" ]]; then
     eval "$(keychain --eval --quiet id_ed25519)"
 fi

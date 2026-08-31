@@ -16,6 +16,7 @@ proot
 ripgrep
 starship
 termux-api
+termux-services
 tmux
 util-linux
 zoxide

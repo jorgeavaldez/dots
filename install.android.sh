@@ -23,6 +23,8 @@ fi
 
 pkg update
 xargs pkg install -y <"$DOTS_DIR/termux/packages.txt"
+SVDIR="$PREFIX/var/service" LOGDIR="$PREFIX/var/log" service-daemon start >/dev/null 2>&1 || true
+SVDIR="$PREFIX/var/service" sv-enable ssh-agent
 xargs npm install --global --ignore-scripts <"$DOTS_DIR/termux/npm-packages.txt"
 curl -fsSL https://herdr.dev/install.sh | HERDR_INSTALL_DIR="$HOME/.local/bin" sh
 
