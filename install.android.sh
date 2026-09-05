@@ -39,16 +39,26 @@ install -d -m 700 "$HOME/.local/share/jj-android/workspaces"
 jj_url="$(curl -fsSL https://api.github.com/repos/jj-vcs/jj/releases/latest |
     jq -er '.assets[] | select(.name | test("aarch64-unknown-linux-musl\\.tar\\.gz$")) | .browser_download_url' |
     head -n 1)"
-jj_tmp="$(mktemp -d)"
-trap 'rm -rf "$jj_tmp"' EXIT
-curl -fsSL "$jj_url" -o "$jj_tmp/jj.tar.gz"
-tar -xzf "$jj_tmp/jj.tar.gz" -C "$jj_tmp"
-jj_binary="$(find "$jj_tmp" -type f -name jj -perm -u+x -print -quit)"
+release_tmp="$(mktemp -d)"
+trap 'rm -rf "$release_tmp"' EXIT
+curl -fsSL "$jj_url" -o "$release_tmp/jj.tar.gz"
+tar -xzf "$release_tmp/jj.tar.gz" -C "$release_tmp"
+jj_binary="$(find "$release_tmp" -type f -name jj -perm -u+x -print -quit)"
 if [[ -z "$jj_binary" ]]; then
     echo "The Jujutsu release archive did not contain an executable named jj." >&2
     exit 1
 fi
 install -m 755 "$jj_binary" "$HOME/.local/libexec/jj"
+
+fnox_asset="$(curl -fsSL https://api.github.com/repos/jdx/fnox/releases/latest |
+    jq -ce '.assets[] | select(.name == "fnox-aarch64-unknown-linux-musl.tar.gz")')"
+fnox_digest="$(jq -er '.digest | select(startswith("sha256:"))' <<<"$fnox_asset")"
+curl -fsSL "$(jq -er '.browser_download_url' <<<"$fnox_asset")" -o "$release_tmp/fnox.tar.gz"
+printf '%s  %s\n' "${fnox_digest#sha256:}" "$release_tmp/fnox.tar.gz" | sha256sum --check
+# Extract only the executable from the verified ARM64 static-musl release.
+tar -xzf "$release_tmp/fnox.tar.gz" -C "$release_tmp" fnox
+"$release_tmp/fnox" --version
+install -m 755 "$release_tmp/fnox" "$HOME/.local/bin/fnox"
 
 links=(
     "$DOTS_DIR/.zshenv:$HOME/.zshenv"
