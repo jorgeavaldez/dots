@@ -65,6 +65,7 @@ grok = { version = "latest", bin = "grok", platforms = { windows-arm64 = { bin =
 zellij = "latest"
 zmx = "latest"
 "github:vercel-labs/fx" = "latest"
+age = "latest"
 
 [settings]
 idiomatic_version_file_enable_tools = ["python"]
