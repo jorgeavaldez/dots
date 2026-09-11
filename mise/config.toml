@@ -66,6 +66,7 @@ zellij = "latest"
 zmx = "latest"
 "github:vercel-labs/fx" = "latest"
 age = "latest"
+"github:vercel-labs/agent-browser" = "latest"
 
 [settings]
 idiomatic_version_file_enable_tools = ["python"]
