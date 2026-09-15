@@ -1,0 +1,22 @@
+{
+    "$schema": "https://vicinae.com/schemas/config.json",
+    "global_shortcuts": {
+        "toggle": "control+space"
+    },
+    "providers": {
+        "wm": {
+            "entrypoints": {
+                "switch-windows": {
+                    "shortcut": "alt+tab"
+                }
+            }
+        },
+        "clipboard": {
+            "entrypoints": {
+                "history": {
+                    "shortcut": "control+shift+V"
+                }
+            }
+        }
+    }
+}

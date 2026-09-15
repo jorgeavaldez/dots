@@ -1,0 +1,17 @@
+[Settings]
+Name=Spectacle-style window management
+
+[kwin][Global Shortcuts]
+Window Quick Tile Left=Meta+Alt+Left
+Window Quick Tile Right=Meta+Alt+Right
+Window Quick Tile Top=Meta+Alt+Up
+Window Quick Tile Bottom=Meta+Alt+Down
+Window Maximize=Meta+Alt+F
+Window Move Center=Meta+Alt+C
+Window Quick Tile Top Left=Meta+Ctrl+Left
+Window Quick Tile Top Right=Meta+Ctrl+Right
+Window Quick Tile Bottom Left=Meta+Ctrl+Shift+Left
+Window Quick Tile Bottom Right=Meta+Ctrl+Shift+Right
+Window to Previous Screen=Meta+Ctrl+Alt+Left
+Window to Next Screen=Meta+Ctrl+Alt+Right
+Window Maximize Vertical=Ctrl+Alt+Shift+Up

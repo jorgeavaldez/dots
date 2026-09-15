@@ -156,6 +156,45 @@ safe_link "$DOTS_DIR/herdr/config.toml" ~/.config/herdr/config.toml
 safe_link "$DOTS_DIR/zellij/config.kdl" ~/.config/zellij/config.kdl
 safe_link "$DOTS_DIR/git/config" ~/.gitconfig
 
+# Vicinae writes GUI changes to settings.json; import tracked defaults instead of
+# symlinking that writable file (or any clipboard/snippet databases) into dots.
+case "$(uname -s)" in
+    Darwin | Linux)
+        if [ -z "${TERMUX_VERSION:-}" ] && [[ "${PREFIX:-}" != *com.termux* ]]; then
+            vicinae_config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/vicinae"
+            mkdir -p "$vicinae_config_dir" || exit 1
+            safe_link_dir "$DOTS_DIR/vicinae" "$vicinae_config_dir/dots"
+
+            vicinae_imports='"dots/settings.json"'
+            if [ "$(uname -s)" = Darwin ]; then
+                vicinae_imports+=', "dots/macos.json"'
+            fi
+
+            if [ ! -e "$vicinae_config_dir/settings.json" ] && [ ! -L "$vicinae_config_dir/settings.json" ]; then
+                printf '{\n    "imports": [%s]\n}\n' "$vicinae_imports" >"$vicinae_config_dir/settings.json" || exit 1
+            else
+                echo "Vicinae: preserved $vicinae_config_dir/settings.json (including with --force)."
+                echo "Ensure its imports array includes: $vicinae_imports"
+            fi
+
+            if [ "$(uname -s)" = Darwin ]; then
+                # Rectangle consumes and renames this file on its next launch.
+                # Copy it, never symlink it or replace the live preference plist.
+                rectangle_config_dir="$HOME/Library/Application Support/Rectangle"
+                mkdir -p "$rectangle_config_dir" || exit 1
+                if [ ! -e "$rectangle_config_dir/RectangleConfig.json" ] && [ ! -L "$rectangle_config_dir/RectangleConfig.json" ]; then
+                    cp "$DOTS_DIR/vicinae/RectangleConfig.json" "$rectangle_config_dir/RectangleConfig.json" || exit 1
+                else
+                    echo "Rectangle: pending import preserved; import vicinae/RectangleConfig.json manually if needed."
+                fi
+                echo "Quit Raycast before starting Vicinae and restarting Rectangle. See vicinae/README.md for permissions and login setup."
+            else
+                echo "KDE Plasma: import vicinae/kde.kksrc and configure Vicinae shortcuts/startup as described in vicinae/README.md."
+            fi
+        fi
+        ;;
+esac
+
 install_wezterm_terminfo
 
 echo "Dotfiles symlinked!"
