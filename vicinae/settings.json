@@ -8,5 +8,8 @@
     "favorites": [
         "clipboard:history",
         "wm:switch-windows"
-    ]
+    ],
+    "telemetry": {
+        "system_info": false
+    }
 }
