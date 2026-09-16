@@ -139,6 +139,7 @@ mkdir -p ~/.config/opencode
 mkdir -p ~/.config/jj
 mkdir -p ~/.config/herdr
 mkdir -p ~/.config/zellij
+mkdir -p ~/.config/yazi
 
 prepare_mise_dir
 
@@ -155,6 +156,16 @@ safe_link "$DOTS_DIR/jj/config.toml" ~/.config/jj/config.toml
 safe_link "$DOTS_DIR/herdr/config.toml" ~/.config/herdr/config.toml
 safe_link "$DOTS_DIR/zellij/config.kdl" ~/.config/zellij/config.kdl
 safe_link "$DOTS_DIR/git/config" ~/.gitconfig
+
+# Link config files only; downloaded Yazi plugins/flavors stay outside dots.
+safe_link "$DOTS_DIR/yazi/yazi.toml" ~/.config/yazi/yazi.toml
+safe_link "$DOTS_DIR/yazi/theme.toml" ~/.config/yazi/theme.toml
+safe_link "$DOTS_DIR/yazi/package.toml" ~/.config/yazi/package.toml
+if [ "$(uname -s)" = Darwin ]; then
+    safe_link "$DOTS_DIR/yazi/macos/keymap.toml" ~/.config/yazi/keymap.toml
+else
+    safe_link "$DOTS_DIR/yazi/keymap.toml" ~/.config/yazi/keymap.toml
+fi
 
 # Vicinae writes GUI changes to settings.json; import tracked defaults instead of
 # symlinking that writable file (or any clipboard/snippet databases) into dots.

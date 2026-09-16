@@ -1,0 +1,5 @@
+[mgr]
+show_hidden = true
+
+[input]
+filter_origin = "hovered"

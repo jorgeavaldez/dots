@@ -33,7 +33,7 @@ else
 fi
 "$HOME/.local/bin/herdr" plugin link "$DOTS_DIR/termux/herdr-notifications" --enabled >/dev/null
 
-mkdir -p "$HOME/.config/jj" "$HOME/.local/bin" "$HOME/.local/libexec"
+mkdir -p "$HOME/.config/jj" "$HOME/.config/yazi" "$HOME/.local/bin" "$HOME/.local/libexec"
 install -d -m 700 "$HOME/.local/share/jj-android/workspaces"
 
 jj_url="$(curl -fsSL https://api.github.com/repos/jj-vcs/jj/releases/latest |
@@ -67,6 +67,10 @@ links=(
     "$DOTS_DIR/.tmux.conf:$HOME/.tmux.conf"
     "$DOTS_DIR/starship.toml:$HOME/.config/starship.toml"
     "$DOTS_DIR/jj/config.toml:$HOME/.config/jj/config.toml"
+    "$DOTS_DIR/yazi/yazi.toml:$HOME/.config/yazi/yazi.toml"
+    "$DOTS_DIR/yazi/theme.toml:$HOME/.config/yazi/theme.toml"
+    "$DOTS_DIR/yazi/package.toml:$HOME/.config/yazi/package.toml"
+    "$DOTS_DIR/yazi/keymap.toml:$HOME/.config/yazi/keymap.toml"
     "$DOTS_DIR/git/config:$HOME/.gitconfig"
     "$DOTS_DIR/termux/jj-wrapper.sh:$HOME/.local/bin/jj"
 )

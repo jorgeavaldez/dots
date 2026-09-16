@@ -1,0 +1,16 @@
+# Complete macOS keymap, selected by install.sh instead of ../keymap.toml.
+# Keep shared bindings (currently g?) in both keymaps.
+[[mgr.prepend_keymap]]
+on = [ "y" ]
+run = [ "yank", "plugin clippy" ]
+desc = "Yank and copy files to macOS clipboard"
+
+[[mgr.prepend_keymap]]
+on = [ "g", "r" ]
+run = "shell 'open -R %s1'"
+desc = "Reveal in Finder"
+
+[[mgr.prepend_keymap]]
+on = [ "g", "?" ]
+run = "help"
+desc = "Open help"

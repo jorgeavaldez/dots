@@ -1,0 +1,6 @@
+# Shared Linux/Termux keymap. macOS uses macos/keymap.toml instead.
+# TODO: configure Linux file clipboard and file-manager reveal; see README.md.
+[[mgr.prepend_keymap]]
+on = [ "g", "?" ]
+run = "help"
+desc = "Open help"
