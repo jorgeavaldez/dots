@@ -2,7 +2,8 @@
 # Keep shared bindings (currently g?) in both keymaps.
 [[mgr.prepend_keymap]]
 on = [ "y" ]
-run = [ "yank", "plugin clippy" ]
+# %y expands to all yanked paths, even after yank clears the selection.
+run = [ "yank", "shell 'clippy %y'" ]
 desc = "Yank and copy files to macOS clipboard"
 
 [[mgr.prepend_keymap]]

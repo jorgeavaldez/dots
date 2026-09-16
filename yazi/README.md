@@ -13,8 +13,8 @@ After installing Yazi and linking the configs on a new machine, run:
 ya pkg install
 ```
 
-The shared manifest includes Clippy, but only the macOS keymap invokes it.
-On macOS, also install its executable:
+The manifest installs the themes. On macOS, also install the Clippy executable
+(called directly by the keymap; no Clippy Yazi plugin is needed):
 
 ```sh
 brew install clippy

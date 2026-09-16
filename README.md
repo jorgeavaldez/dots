@@ -32,7 +32,7 @@ This will symlink:
 
 On macOS and Linux (excluding Termux), it also links `vicinae/` into Vicinae's config directory and seeds a local settings file on fresh installs. On macOS it stages Rectangle's Spectacle-style shortcut preset. Existing Vicinae settings and pending Rectangle imports are preserved even with `--force`. See [Vicinae setup](vicinae/README.md) for app installation, existing-config imports, macOS permissions/login setup, and the additional KDE Plasma Wayland steps.
 
-See [Yazi setup](yazi/README.md) for installing its theme/plugin dependencies and the planned Linux clipboard/reveal bindings. Downloaded Yazi packages stay outside this repository.
+See [Yazi setup](yazi/README.md) for installing its theme and macOS clipboard dependencies and the planned Linux clipboard/reveal bindings. Downloaded Yazi packages stay outside this repository.
 
 It also downloads the latest WezTerm terminfo definitions from upstream and installs them into `~/.terminfo` so tools like `less` work when `TERM=wezterm`.
 
