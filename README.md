@@ -2,6 +2,76 @@
 
 my dotfiles
 
+## Nushell (Windows and macOS)
+
+With Nushell, mise, and zoxide installed through your existing package setup,
+use this bootstrap to connect their configuration. It does not install, upgrade,
+or move programs between mise, Homebrew, WinGet, or other package managers.
+Your existing Zsh/macOS setup and WezTerm installation stay as they are.
+
+Run the same installer on either platform from `~/dots`:
+
+```nu
+nu --no-config-file bootstrap.nu --dry-run
+nu --no-config-file bootstrap.nu
+```
+
+This replaces the Windows-only `bootstrap.windows.nu` and its package-install
+step. There is no separate Nu tool/version list: `mise/config.toml` remains the
+existing shared mise configuration. The installer never reloads Nu or changes
+your login/default shell. On your Mac, just run `nu` whenever you want to try it.
+
+Individual files are linked, not the whole Nushell config directory:
+
+| Shared source | Destination |
+| --- | --- |
+| `mise/config.toml` | `~/.config/mise/config.toml` by default |
+| `nushell/env.nu` | `$nu.env-path` |
+| `nushell/config.nu` | `$nu.config-path` |
+
+Nu supplies its platform-specific startup paths: normally `%APPDATA%/nushell` on
+Windows and `~/Library/Application Support/nushell` on macOS. Its XDG config
+override is respected, as are mise's `MISE_GLOBAL_CONFIG_FILE`, `MISE_CONFIG_DIR`,
+and `XDG_CONFIG_HOME`. Existing files (including the old dots source-line loader)
+are moved to sibling `.before-dots-<uuid>` backups before linking. Correct links
+are left alone, including an existing mise directory symlink from `install.sh`.
+
+Nu history stays local. `nushell/env.nu` regenerates mise's session-dependent
+integration in `$nu.cache-dir`. The bootstrap generates zoxide's static integration
+at `$nu.data-dir/zoxide.nu`; startup imports it without resolving or running
+zoxide again. Rerun the bootstrap after upgrading zoxide to refresh that script.
+Generated scripts and zoxide's history database stay outside dots.
+`l` is `ls --all --long`: hidden entries,
+human-readable sizes, and all metadata Nu provides on the current platform.
+It is not an exact GNU `ls -lash` clone (for example, no allocated-block column).
+
+The installer also connects `wezterm/` using a Windows directory junction or a
+macOS symlink. Conflicting directory destinations stop it before any changes.
+Windows **file** symlinks require Developer Mode or an elevated terminal; the
+installer creates each link before moving its old config aside.
+
+### Windows notes
+
+The shared WezTerm config already starts `nu.exe` on Windows and disables its SSH
+agent socket override so Windows OpenSSH can use 1Password. It leaves macOS's
+shell choice alone. In an existing Windows Nu pane, clear an old override with
+`hide-env SSH_AUTH_SOCK`, or restart WezTerm when convenient.
+
+Configure Git locally to use Windows OpenSSH when using the 1Password agent:
+
+```nu
+git config --global core.sshCommand C:/Windows/System32/OpenSSH/ssh.exe
+```
+
+Keep that machine setting outside the shared `git/config`. This bootstrap does
+not link the Git, jj, or Zsh configurations. The existing jj config requires
+additional pager/editor tools and will be adapted separately.
+
+Neovim's Windows config belongs in `%LOCALAPPDATA%/nvim` (`:echo stdpath('config')`
+shows the actual path). Its config is maintained separately from this repo. If
+`~/.config/nvim/init.lua` exists, the bootstrap also links `%LOCALAPPDATA%/nvim`
+to that checkout. It does not install plugins or copy `.vimrc`.
+
 ## install
 
 ```bash

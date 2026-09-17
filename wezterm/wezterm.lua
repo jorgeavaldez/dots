@@ -2,6 +2,13 @@
 local wezterm = require("wezterm") ---@type Wezterm
 local appearance = require("appearance")
 local config = wezterm.config_builder() ---@type Config
+local is_windows = wezterm.target_triple:find("windows") ~= nil
+
+if is_windows then
+	config.default_prog = { "nu.exe" }
+	-- Windows OpenSSH uses 1Password's named pipe when SSH_AUTH_SOCK is unset.
+	config.mux_enable_ssh_agent = false
+end
 
 local is_dark = appearance.is_dark()
 if is_dark then
@@ -16,7 +23,13 @@ config.set_environment_variables = config.set_environment_variables or {}
 config.set_environment_variables.WEZTERM_APPEARANCE = is_dark and "dark" or "light"
 
 config.font = wezterm.font("JetBrains Mono")
-config.font_size = 13
+
+if is_windows then
+	config.font_size = 10
+else
+	config.font_size = 13
+end
+
 config.max_fps = 120
 config.use_fancy_tab_bar = false
 config.window_decorations = "RESIZE"
@@ -89,7 +102,7 @@ local function process_info_has_pi(process_info)
 end
 
 local function pane_is_running_pi(pane)
-	if not pane then
+	if is_windows or not pane then
 		return false
 	end
 
@@ -116,11 +129,15 @@ local function update_kitty_keyboard_for_pane(window, pane)
 end
 
 local function is_shell_process(process)
+	process = process:lower():gsub("%.exe$", "")
 	return process == "zsh"
 		or process == "bash"
 		or process == "sh"
 		or process == "fish"
 		or process == "nu"
+		or process == "pwsh"
+		or process == "powershell"
+		or process == "cmd"
 end
 
 local function cwd_basename(cwd)
