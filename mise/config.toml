@@ -4,7 +4,7 @@ elixir = "latest"
 erlang = "latest"
 go = "latest"
 java = "latest"
-lua = "latest"
+lua = { version = "latest", os = ["linux", "macos"] }
 node = "latest"
 # another npm client, mise uses it, jdx made it
 aube = "latest"
@@ -31,6 +31,7 @@ jj = "latest"
 1password-cli = "latest"
 zig = "latest"
 zls = "latest"
+zoxide = "latest"
 "aqua:JohnnyMorganz/StyLua" = "latest"
 "pipx:pre-commit" = "latest"
 "cargo:qsv" = "latest"
@@ -47,7 +48,10 @@ bun = "latest"
 "npm:hunkdiff" = "latest"
 actionlint = "latest"
 taplo = "latest"
-"npm:@tobilu/qmd" = { version = "latest", allow_builds = [
+"npm:@tobilu/qmd" = { version = "latest", os = [
+  "linux",
+  "macos",
+], allow_builds = [
   "better-sqlite3",
   "node-llama-cpp",
   "tree-sitter-go",
@@ -64,9 +68,19 @@ gcloud = "latest"
 grok = { version = "latest", bin = "grok", platforms = { windows-arm64 = { bin = "grok.exe", url = "https://storage.googleapis.com/grok-build-public-artifacts/cli/grok-{{ version }}-windows-aarch64.exe" }, windows-x64 = { bin = "grok.exe", url = "https://storage.googleapis.com/grok-build-public-artifacts/cli/grok-{{ version }}-windows-x86_64.exe" } }, url = 'https://storage.googleapis.com/grok-build-public-artifacts/cli/grok-{{ version }}-{{ os() }}-{{ arch(x64="x86_64", arm64="aarch64") }}', version_list_url = "https://x.ai/cli/stable" }
 zellij = "latest"
 zmx = "latest"
-"github:vercel-labs/fx" = "latest"
+"github:vercel-labs/fx" = { version = "latest", os = ["linux", "macos"] }
 age = "latest"
 "github:vercel-labs/agent-browser" = "latest"
+
+# Windows binaries from LuaBinaries, linked by https://www.lua.org/download.html.
+# SHA-256 pins the trusted first download, not a signature from the Lua authors.
+# When changing versions, verify the new ZIP and update its checksum too.
+[tools."http:lua"]
+version = "5.5.0"
+os = ["windows/x64"]
+url = "https://downloads.sourceforge.net/project/luabinaries/{{ version }}/Tools%20Executables/lua-{{ version }}_Win64_bin.zip"
+checksum = "sha256:7825cb261d0dc61cb0e1511d451ceaf10bf72d2bba1855bfd3350add190e0024"
+rename_exe = { "lua[0-9]*.exe" = "lua.exe", "luac[0-9]*.exe" = "luac.exe", "wlua[0-9]*.exe" = "wlua.exe" }
 
 [settings]
 idiomatic_version_file_enable_tools = ["python"]
