@@ -1,5 +1,25 @@
-# Shared interactive config for Windows, macOS, and Linux.
+# Shared interactive config for Windows and macOS.
 $env.config.show_banner = false
+$env.config.edit_mode = "vi"
+
+# Native Carapace completions only: no Bash/Zsh/Fish completion bridges.
+# Keep all words when expanding aliases (for example dco -> docker compose).
+$env.config.completions.external.enable = true
+$env.config.completions.external.completer = {|spans|
+    let expansion = scope aliases | where name == $spans.0 | get -o 0.expansion
+    let words = if $expansion == null { [$spans.0] } else {
+        $expansion | split row " "
+    }
+    let spans = ($words | append ($spans | skip 1) | update 0 {|word|
+        $word | str replace --regex '^\^' '' | str replace --regex '\.exe$' ''
+    })
+    try {
+        with-env {CARAPACE_BRIDGES: ""} {
+            let result = (^carapace $spans.0 nushell ...$spans | from json)
+            if ($result | is-empty) { null } else { $result }
+        }
+    } catch { null }
+}
 
 alias j = ^jj
 alias js = ^jj st
@@ -10,6 +30,7 @@ alias e = ^nvim
 alias c = clear
 alias l = ls --all --long
 alias h = herdr
+alias dco = ^docker compose
 # Replace Nu to reload startup files; temporary variables/definitions are lost.
 alias reload = exec nu
 
@@ -30,6 +51,89 @@ def rmsymlink [link: path] {
 
 def --env proj [] {
     cd ("~" | path expand | path join "proj")
+}
+
+# Without an argument or pipeline, jj opens the configured editor.
+def commit [message?: string] {
+    let piped = $in
+    if $message != null {
+        ^jj commit --message $message
+    } else if $piped != null {
+        ^jj commit --message ($piped | into string)
+    } else {
+        ^jj commit
+    }
+}
+
+def bump [] {
+    let result = (^jj currbm-name | complete)
+    if $result.exit_code != 0 {
+        error make {
+            msg: ($result.stderr | str trim)
+        }
+    }
+    let bookmarks = $result.stdout | lines | where {|name| $name != ""}
+    if ($bookmarks | length) != 1 {
+        error make {msg: "bump requires exactly one current bookmark."}
+    }
+    ^jj bookmark move $bookmarks.0 --to @-
+}
+
+# Use OS clipboard APIs, not clip.exe's legacy code-page conversion.
+def pbcopy []: string -> nothing {
+    let text = $in
+    match $nu.os-info.name {
+        "macos" => {
+            $text | ^/usr/bin/pbcopy
+        }
+        "windows" => {
+            $text | ^powershell.exe -NoProfile -NonInteractive -Command '
+                [Console]::InputEncoding = [System.Text.UTF8Encoding]::new($false)
+                $text = [Console]::In.ReadToEnd()
+                if ($text.Length -eq 0) {
+                    Add-Type -AssemblyName System.Windows.Forms
+                    [System.Windows.Forms.Clipboard]::Clear()
+                } else {
+                    Set-Clipboard -Value $text
+                }
+            '
+        }
+        _ => { error make {msg: "Clipboard integration is configured for Windows and macOS only."} }
+    }
+}
+
+def pbpaste []: nothing -> string {
+
+    # Capture stdout explicitly: Nu trims a trailing newline when collecting
+    # an external byte stream into a variable or subexpression.
+    let result = match $nu.os-info.name {
+        "macos" => {
+            ^/usr/bin/pbpaste | complete
+        }
+        "windows" => {
+            ^powershell.exe -NoProfile -NonInteractive -Command '
+                [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+                [Console]::Out.Write((Get-Clipboard -Raw))
+            ' | complete
+        }
+        _ => { error make {msg: "Clipboard integration is configured for Windows and macOS only."} }
+    }
+    if $result.exit_code != 0 {
+        error make {
+            msg: ($result.stderr | str trim)
+        }
+    }
+    $result.stdout
+}
+
+def repo-url [repo_name?: string]: nothing -> string {
+    $repo_name
+    | default {
+        pwd | path basename
+    }
+    | gh repo view $in --json sshUrl
+    | from json
+    | get sshUrl
 }
 
 use ($nu.cache-dir | path join "mise.nu")

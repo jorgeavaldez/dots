@@ -26,6 +26,8 @@ pitchfork = "latest"
 "aqua:cli/cli" = "2.87.3"
 "npm:prettier" = "latest"
 fd = "latest"
+ripgrep = "latest"
+carapace = "latest"
 jj = "latest"
 "cargo:jj-starship" = "latest"
 1password-cli = "latest"
@@ -82,9 +84,25 @@ url = "https://downloads.sourceforge.net/project/luabinaries/{{ version }}/Tools
 checksum = "sha256:7825cb261d0dc61cb0e1511d451ceaf10bf72d2bba1855bfd3350add190e0024"
 rename_exe = { "lua[0-9]*.exe" = "lua.exe", "luac[0-9]*.exe" = "luac.exe", "wlua[0-9]*.exe" = "wlua.exe" }
 
+# System prerequisites/apps; development tools above remain mise-managed.
+# Git for Windows includes Git LFS. Neovim is managed separately.
+[bootstrap.packages]
+"winget:Git.Git" = { os = "windows" }
+"winget:wez.wezterm" = { os = "windows" }
+"winget:jftuga.less" = { os = "windows" }
+"winget:Microsoft.VisualStudio.BuildTools" = { os = "windows" }
+"brew:git" = { os = "macos" }
+"brew:git-lfs" = { os = "macos" }
+"brew:less" = { os = "macos" }
+"brew:autoconf" = { os = "macos" }
+"brew:openssl@3" = { os = "macos" }
+"brew:pkgconf" = { os = "macos" }
+"brew-cask:wezterm" = { os = "macos" }
+
 [settings]
 idiomatic_version_file_enable_tools = ["python"]
 experimental = true
+env_cache = true
 
 [settings.python]
 uv_venv_auto = "source"
