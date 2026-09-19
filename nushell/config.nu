@@ -34,6 +34,8 @@ alias reload = exec nu
 
 const links_module = path self | path expand | path dirname | path join "links.nu"
 use $links_module symlink
+const secrets_module = path self | path expand | path dirname | path join "secrets.nu"
+use $secrets_module
 
 # Remove only links, never their targets or ordinary files/directories.
 def rmsymlink [link: path] {

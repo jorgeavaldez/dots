@@ -72,6 +72,7 @@ zellij = "latest"
 zmx = "latest"
 "github:vercel-labs/fx" = { version = "latest", os = ["linux", "macos"] }
 age = "latest"
+fnox = { version = "latest", os = ["windows", "macos"] }
 "github:vercel-labs/agent-browser" = "latest"
 
 # Windows binaries from LuaBinaries, linked by https://www.lua.org/download.html.

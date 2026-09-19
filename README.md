@@ -86,9 +86,80 @@ zoxide upgrade. Mise's session-dependent integration is regenerated at startup.
 
 Neovim and its config are **entirely separate**, including Windows config links.
 The jj diff/merge editor expects the custom Neovim commands already installed
-there. This bootstrap does not install Docker/Postgres, configure secrets or
-SSH authentication, migrate Yazi, or configure macOS desktop applications.
+there. This bootstrap does not install Docker/Postgres, enroll secrets or
+configure SSH authentication, migrate Yazi, or configure macOS desktop applications.
 Linux and Termux remain on the existing installers below for now.
+
+### Automatic secrets (Windows and macOS)
+
+Bootstrap installs fnox, age, and the 1Password CLI. After opening a new Nu session,
+run the one-time device setup:
+
+```nu
+secrets setup
+```
+
+This creates a separate age identity for this device and stores its private key
+in Windows Credential Manager or macOS Keychain. It also creates an empty,
+commented `sources.toml` template if missing. Repeating setup preserves existing
+references, identity, and cache. Both `sources.toml` and the encrypted
+`config.toml` stay in `~/.config/fnox/` (or `$env.FNOX_CONFIG_DIR`),
+**outside dots and not symlinked**. An unrelated existing fnox config stops
+enrollment rather than being overwritten.
+
+To create only the reference template, without enrolling a device or fetching
+anything, run:
+
+```nu
+secrets init
+```
+
+The command prints its path and never overwrites an existing file. Add your
+variables under `[secrets]` in that **private** `sources.toml`:
+
+```toml
+[secrets]
+OPENAI_API_KEY = { provider = "onepassword", value = "op://Vault/Item/credential" }
+```
+
+Enter actual values in 1Password, not this file or shell command arguments.
+Enable 1Password CLI access/sign in, then fetch and encrypt the values locally:
+
+```nu
+secrets refresh
+```
+
+Refresh also updates the current Nu environment and removes cached variables whose
+mappings were deleted. Repeat it after adding references or rotating keys; existing
+child processes need restarting to see updates. `DOTS_AGE_IDENTITY` is reserved
+for the device identity and is never exported.
+
+New Nu sessions automatically decrypt the local cache into their environment.
+Pi and other child processes inherit those variables without a wrapper or another
+1Password call. Startup does not discover project fnox files, run a daemon, or
+fetch missing secrets remotely. A new mapping without a cached value tells you
+to run `secrets refresh`; decryption failures are reported. Nu remains usable
+before enrollment. Locking 1Password does not lock the independent local cache.
+
+For fast startup, `dots-fnox-path` beside the device config caches only fnox's
+executable path, never decrypted keys. Setup and refresh update it; a missing
+cache or executable is re-resolved automatically. After upgrading fnox, run
+`secrets setup` to select the new executable without contacting 1Password.
+
+To check without displaying a key, use its presence rather than its value:
+
+```nu
+$env.OPENAI_API_KEY? != null
+nu --no-config-file -c '$env.OPENAI_API_KEY? != null'
+```
+
+On a second Windows machine or Mac, run `secrets setup` and `secrets refresh`
+there too, and populate that device's private `sources.toml`. Actual service,
+vault, item, and field references are not stored in this repository; only the
+empty template is shared. If moving from the old repository-local
+`fnox/sources.toml`, move it to the private fnox directory before starting a new
+shell; that old repository path is now ignored. Do not share device identities
+or encrypted caches. The old Zsh setup and Linux/Termux integration are unchanged.
 
 ### macOS setup and smoke test
 
