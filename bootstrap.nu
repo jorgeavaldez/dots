@@ -16,7 +16,12 @@ def --env refresh-system-path [] {
         if $result.exit_code != 0 { error make {msg: "Could not read the installed Windows PATH."} }
         $result.stdout | str trim | split row ";" | where {|entry| $entry != ""}
     } else {
-        ["/opt/homebrew/bin" "/opt/homebrew/sbin" "/usr/local/bin" "/usr/local/sbin"]
+        [
+            "/opt/homebrew/bin"
+            "/opt/homebrew/sbin"
+            "/usr/local/bin"
+            "/usr/local/sbin"
+        ]
         | where {|entry| $entry | path exists}
     }
     $env.PATH = ($env.PATH | append $paths | uniq)
@@ -53,8 +58,12 @@ def ensure-compiler-prerequisites [] {
     refresh-system-path
     match $nu.os-info.name {
         "windows" => {
-            let installer_dir = ($env | get "ProgramFiles(x86)" | path join "Microsoft Visual Studio" "Installer")
-            let vswhere = ($installer_dir | path join "vswhere.exe")
+            let installer_dir = (
+                $env
+                | get "ProgramFiles(x86)"
+                | path join "Microsoft Visual Studio" "Installer"
+            )
+            let vswhere = $installer_dir | path join "vswhere.exe"
             let installation = (do --capture-errors {
                 ^$vswhere -latest -products Microsoft.VisualStudio.Product.BuildTools -property installationPath
             } | str trim)
@@ -62,11 +71,14 @@ def ensure-compiler-prerequisites [] {
             if (windows-cpp-ready $vswhere $installation) { return }
 
             print "Installing the Visual C++ workload and recommended Windows SDK. Windows may request elevation."
-            let setup = ($installer_dir | path join "setup.exe")
+            let setup = $installer_dir | path join "setup.exe"
             # VS setup must run outside its own directory. --wait belongs to the
             # bootstrapper, not setup.exe; Nu waits for this process itself.
             cd $dots
-            let result = (^$setup modify --installPath $installation --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --passive --norestart | complete)
+            let result = (
+                ^$setup modify --installPath $installation --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --passive --norestart
+                | complete
+            )
             let status = $result.exit_code
             if $status == 3010 {
                 error make {msg: "Build Tools requires a reboot. Reboot, then rerun bootstrap.nu."}
@@ -93,14 +105,14 @@ def main [
     --dry-run # Show actions without installing packages or changing files.
 ] {
     let home = $nu.home-dir
-    let config_home = ($env.XDG_CONFIG_HOME? | default ($home | path join ".config"))
+    let config_home = $env.XDG_CONFIG_HOME? | default ($home | path join ".config")
     let platform = match $nu.os-info.name {
-        "windows" => {
+        windows => {
             wezterm: ($home | path join ".config" "wezterm")
             jj: ($env.APPDATA | path join "jj" "config.toml")
             herdr: ($env.APPDATA | path join "herdr" "config.toml")
         }
-        "macos" => {
+        macos => {
             wezterm: ($config_home | path join "wezterm")
             jj: ($config_home | path join "jj" "config.toml")
             herdr: ($config_home | path join "herdr" "config.toml")
@@ -111,11 +123,14 @@ def main [
     let manager = if $nu.os-info.name == "windows" { "winget" } else { "brew" }
     if (which $manager | is-empty) { error make {msg: $"Install ($manager) before running bootstrap.nu."} }
 
-    let mise_dir = ($env.MISE_CONFIG_DIR? | default ($config_home | path join "mise"))
-    let mise_config = ($env.MISE_GLOBAL_CONFIG_FILE? | default ($mise_dir | path join "config.toml"))
-    let git_config = ($home | path join ".gitconfig")
-    let git_local = ($home | path join ".gitconfig.local")
-    let zoxide_init = ($nu.data-dir | path join "zoxide.nu")
+    let mise_dir = $env.MISE_CONFIG_DIR? | default ($config_home | path join "mise")
+    let mise_config = (
+        $env.MISE_GLOBAL_CONFIG_FILE?
+        | default ($mise_dir | path join "config.toml")
+    )
+    let git_config = $home | path join ".gitconfig"
+    let git_local = $home | path join ".gitconfig.local"
+    let zoxide_init = $nu.data-dir | path join "zoxide.nu"
     # Let an existing jj resolve its own override/legacy config location.
     let jj_config = if (which jj | is-empty) {
         if $env.JJ_CONFIG? != null {
@@ -123,22 +138,50 @@ def main [
         }
         $platform.jj
     } else {
-        let paths = (do --capture-errors { ^jj config path --user } | lines)
+        let paths = do --capture-errors { ^jj config path --user } | lines
         if ($paths | length) != 1 { error make {msg: "Expected one jj user config destination."} }
         $paths.0
     }
 
     mut links = [
-        {source: ($dots | path join "mise" "config.toml"), destination: $mise_config}
+        {
+            source: ($dots | path join "mise" "config.toml")
+            destination: $mise_config
+        }
+        {
+            source: ($dots | path join "mise" "tasks")
+            destination: ($mise_dir | path join "tasks")
+        }
         # Nu resolves env-path/config-path through existing file symlinks.
         # Link in the config directory instead of overwriting another checkout.
-        {source: ($dots | path join "nushell" "env.nu"), destination: ($nu.default-config-dir | path join "env.nu")}
-        {source: ($dots | path join "nushell" "config.nu"), destination: ($nu.default-config-dir | path join "config.nu")}
-        {source: ($dots | path join "wezterm"), destination: $platform.wezterm}
-        {source: ($dots | path join "jj" "config.toml"), destination: $jj_config}
-        {source: ($dots | path join "herdr" "config.toml"), destination: $platform.herdr}
-        {source: ($dots | path join "git" "config"), destination: $git_config}
-        {source: ($dots | path join "git" "ignore"), destination: ($home | path join ".gitignore")}
+        {
+            source: ($dots | path join "nushell" "env.nu")
+            destination: ($nu.default-config-dir | path join "env.nu")
+        }
+        {
+            source: ($dots | path join "nushell" "config.nu")
+            destination: ($nu.default-config-dir | path join "config.nu")
+        }
+        {
+            source: ($dots | path join "wezterm")
+            destination: $platform.wezterm
+        }
+        {
+            source: ($dots | path join "jj" "config.toml")
+            destination: $jj_config
+        }
+        {
+            source: ($dots | path join "herdr" "config.toml")
+            destination: $platform.herdr
+        }
+        {
+            source: ($dots | path join "git" "config")
+            destination: $git_config
+        }
+        {
+            source: ($dots | path join "git" "ignore")
+            destination: ($home | path join ".gitignore")
+        }
     ]
     if $nu.os-info.name == "macos" {
         $links = ($links | append [
@@ -174,7 +217,13 @@ def main [
         print $"Will link: ($link.destination) -> ($link.source)"
     }
     print $"Will ensure mise is installed through ($manager)."
-    let packages = (open ($dots | path join "mise" "config.toml") | get bootstrap.packages | transpose name options | where options.os == $nu.os-info.name | get name)
+    let packages = (
+        open ($dots | path join "mise" "config.toml")
+        | get bootstrap.packages
+        | transpose name options
+        | where options.os == $nu.os-info.name
+        | get name
+    )
     print $"Will apply system packages: ($packages | str join ', ')"
     print "Will ensure compiler prerequisites, then install missing mise tools."
     print $"Will generate zoxide integration: ($zoxide_init)"
@@ -183,6 +232,7 @@ def main [
     if $dry_run { return }
 
     if $nu.os-info.name == "windows" {
+
         # Fail early on missing file-link privileges, without touching configs.
         let probe = (mktemp --dry --suffix .dots-link)
         symlink ($dots | path join "git" "ignore") $probe
@@ -206,9 +256,16 @@ def main [
         # Use the same package declarations with the installed Homebrew CLI.
         for kind in ["formula" "cask"] {
             let prefix = if $kind == "formula" { "brew:" } else { "brew-cask:" }
-            let requested = ($packages | where {|package| $package | str starts-with $prefix} | each {|package| $package | str replace $prefix ""})
-            let installed = (do --capture-errors { ^brew list $"--($kind)" --full-name -1 } | lines)
-            let missing = ($requested | where {|package| $package not-in $installed})
+            let requested = (
+                $packages
+                | where {|package| $package | str starts-with $prefix}
+                | each {|package| $package | str replace $prefix ""}
+            )
+            let installed = (
+                do --capture-errors { ^brew list $"--($kind)" --full-name -1 }
+                | lines
+            )
+            let missing = $requested | where {|package| $package not-in $installed}
             if ($missing | is-not-empty) {
                 do --capture-errors { ^brew install $"--($kind)" ...$missing }
             }
@@ -220,7 +277,7 @@ def main [
     ensure-compiler-prerequisites
     do --capture-errors { ^mise --cd $dots install --yes }
 
-    let zoxide = (do --capture-errors { ^mise --cd $dots which zoxide } | str trim)
+    let zoxide = do --capture-errors { ^mise --cd $dots which zoxide } | str trim
     let zoxide_script = (do --capture-errors { ^$zoxide init nushell })
     mkdir ($zoxide_init | path dirname)
     $zoxide_script | save --force $zoxide_init

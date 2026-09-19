@@ -37,6 +37,7 @@ zoxide = "latest"
 "aqua:JohnnyMorganz/StyLua" = "latest"
 "pipx:pre-commit" = "latest"
 "cargo:qsv" = "latest"
+"cargo:https://github.com/nushell/nufmt" = "latest"
 claude-code = "latest"
 shfmt = "latest"
 cmake = "latest"
@@ -74,6 +75,7 @@ zmx = "latest"
 age = "latest"
 fnox = { version = "latest", os = ["windows", "macos"] }
 "github:vercel-labs/agent-browser" = "latest"
+bat = "latest"
 
 # Windows binaries from LuaBinaries, linked by https://www.lua.org/download.html.
 # SHA-256 pins the trusted first download, not a signature from the Lua authors.
