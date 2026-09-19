@@ -2,6 +2,19 @@
 local wezterm = require("wezterm") ---@type Wezterm
 local appearance = require("appearance")
 local config = wezterm.config_builder() ---@type Config
+config.set_environment_variables = {}
+local is_windows = wezterm.target_triple:find("windows") ~= nil
+
+if is_windows then
+	config.default_prog = { "nu.exe" }
+	-- Windows OpenSSH uses 1Password's named pipe when SSH_AUTH_SOCK is unset.
+	config.mux_enable_ssh_agent = false
+elseif wezterm.target_triple:find("apple") then
+	-- Finder/Dock launches do not inherit the shell's Homebrew PATH.
+	config.set_environment_variables.PATH = "/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/local/sbin:"
+		.. os.getenv("PATH")
+	config.default_prog = { "nu" }
+end
 
 local is_dark = appearance.is_dark()
 if is_dark then
@@ -10,20 +23,22 @@ else
 	config.color_scheme = "Catppuccin Latte"
 end
 
-config.term = 'wezterm'
+config.term = "wezterm"
 
-config.set_environment_variables = config.set_environment_variables or {}
 config.set_environment_variables.WEZTERM_APPEARANCE = is_dark and "dark" or "light"
 
 config.font = wezterm.font("JetBrains Mono")
-config.font_size = 13
+
+if is_windows then
+	config.font_size = 10
+else
+	config.font_size = 13
+end
+
 config.max_fps = 120
 config.use_fancy_tab_bar = false
 config.window_decorations = "RESIZE"
 config.notification_handling = "AlwaysShow"
-
--- Dynamically enabled while the active pane is running pi.
-config.enable_kitty_keyboard = false
 
 -- custom key binds
 config.leader = {
@@ -57,70 +72,16 @@ local function strip_tab_index_prefix(title)
 	return title:gsub("^%s*%[%d+%]%s*", "")
 end
 
-local function is_pi_agent_path(value)
-	if not value then
-		return false
-	end
-
-	return tostring(value):find(
-		"/npm%-mariozechner%-pi%-coding%-agent/[^/]+/bin/pi$"
-	) ~= nil
-end
-
-local function process_info_has_pi(process_info)
-	if not process_info then
-		return false
-	end
-
-	if is_pi_agent_path(process_info.executable) or is_pi_agent_path(process_info.name) then
-		return true
-	end
-
-	local argv = process_info.argv
-	if type(argv) == "table" then
-		for _, arg in ipairs(argv) do
-			if is_pi_agent_path(arg) then
-				return true
-			end
-		end
-	end
-
-	return false
-end
-
-local function pane_is_running_pi(pane)
-	if not pane then
-		return false
-	end
-
-	if is_pi_agent_path(pane:get_foreground_process_name()) then
-		return true
-	end
-
-	local ok, process_info = pcall(function()
-		return pane:get_foreground_process_info()
-	end)
-	return ok and process_info_has_pi(process_info)
-end
-
-local function update_kitty_keyboard_for_pane(window, pane)
-	local enabled = pane_is_running_pi(pane)
-	local overrides = window:get_config_overrides() or {}
-
-	if overrides.enable_kitty_keyboard == enabled then
-		return
-	end
-
-	overrides.enable_kitty_keyboard = enabled
-	window:set_config_overrides(overrides)
-end
-
 local function is_shell_process(process)
+	process = process:lower():gsub("%.exe$", "")
 	return process == "zsh"
 		or process == "bash"
 		or process == "sh"
 		or process == "fish"
 		or process == "nu"
+		or process == "pwsh"
+		or process == "powershell"
+		or process == "cmd"
 end
 
 local function cwd_basename(cwd)
@@ -202,9 +163,7 @@ wezterm.on("format-tab-title", function(
 	return title_from_pane(tab, max_width)
 end)
 
-wezterm.on("update-status", function(window, pane)
-	update_kitty_keyboard_for_pane(window, pane)
-
+wezterm.on("update-status", function(window)
 	local name = window:active_key_table()
 	if name then
 		name = "TABLE: " .. name
@@ -247,12 +206,6 @@ config.keys = {
 			name = "scroll_mode",
 			one_shot = false,
 		}),
-	},
-	-- Let pi receive Alt+Enter instead of WezTerm's default fullscreen toggle.
-	{
-		key = "Enter",
-		mods = "ALT",
-		action = wezterm.action.DisableDefaultAssignment,
 	},
 	-- shift+enter
 	{

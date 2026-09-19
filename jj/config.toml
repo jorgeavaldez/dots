@@ -5,17 +5,7 @@ name = "Jorge Valdez"
 email = "jorge@yung.dev"
 
 [ui]
-pager = ["sh", "-c", '''
-if [ -n "$NVIM" ]; then
-  case "${WEZTERM_APPEARANCE:-}" in
-    dark)  exec delta --dark --detect-dark-light=never --pager "less -FRX" ;;
-    light) exec delta --light --detect-dark-light=never --pager "less -FRX" ;;
-    *)     exec delta --detect-dark-light=never --pager "less -FRX" ;;
-  esac
-else
-  exec delta --pager "less -FRX"
-fi
-''']
+pager = ["delta", "--pager", "less -FRX"]
 diff-formatter = ":git"
 diff-editor = ["nvim", "-c", "DiffEditor $left $right $output"]
 merge-editor = "diffconflicts"
@@ -39,11 +29,11 @@ private-commits = '''description('private:*')'''
 s = ["st"]
 d = ["diff"]
 dif = ["diff"]
-p = ["git push"]
-f = ["git fetch"]
-push = ["git push"]
-psh = ["git push"]
-fetch = ["git fetch"]
+p = ["git", "push"]
+f = ["git", "fetch"]
+push = ["git", "push"]
+psh = ["git", "push"]
+fetch = ["git", "fetch"]
 currbm = ["b", "l", "-r", "current_bookmark"]
 currbm-name = ["b", "l", "-r", "current_bookmark", "-T", "nonremote_bookmark_name"]
 parentbm = ["b", "l", "-r", "current_parent_bookmark"]
@@ -69,7 +59,7 @@ rebase-topics = ["rebase", "--skip-emptied", "-r", "topic_heads", "-d", "trunk()
 'signature_timestamp(signature)' = 'signature.timestamp().local()'
 'format_commit_signature(signature)' = 'signature ++ " (" ++ signature_timestamp(signature) ++ ")"'
 
-'nonremote_bookmark_name' = 'if(remote, "", name)'
+'nonremote_bookmark_name' = 'if(remote, "", name ++ "\n")'
 
 'bookmarks_remote_recent' = '''
 if(
@@ -88,4 +78,39 @@ if(
     coalesce(self.description().first_line(), "(no description set)") ++ " " ++
     "author: " ++ format_commit_signature(self.author()) ++ "\n"
 '''
+
+# Avoid terminal appearance queries inside Neovim.
+[[--scope]]
+--when.environments = ["NVIM"]
+[--scope.ui]
+pager = ["delta", "--detect-dark-light=never", "--pager", "less -FRX"]
+
+# A present but empty NVIM is not an active editor session.
+[[--scope.--scope]]
+--when.environments = ["NVIM="]
+[--scope.--scope.ui]
+pager = ["delta", "--pager", "less -FRX"]
+
+# Honor WezTerm's appearance in ordinary shells as well as Neovim.
+[[--scope]]
+--when.environments = ["WEZTERM_APPEARANCE=dark"]
+[--scope.ui]
+pager = ["delta", "--dark", "--detect-dark-light=never", "--pager", "less -FRX"]
+
+[[--scope]]
+--when.environments = ["WEZTERM_APPEARANCE=light"]
+[--scope.ui]
+pager = ["delta", "--light", "--detect-dark-light=never", "--pager", "less -FRX"]
+
+# Linux/Termux keep their existing track command until their Nu migration.
+[[--scope]]
+--when.platforms = ["windows", "macos"]
+[--scope.aliases]
+track = ["util", "exec", "--", "nu", "--no-config-file", "-c", '''
+    let result = (jj currbm-name | complete)
+    if $result.exit_code != 0 { error make {msg: ($result.stderr | str trim)} }
+    let bookmarks = ($result.stdout | lines | where {|name| $name != ""})
+    if ($bookmarks | length) != 1 { error make {msg: "track requires exactly one current bookmark."} }
+    jj bookmark track $bookmarks.0 --remote origin
+''']
 

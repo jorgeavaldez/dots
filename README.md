@@ -2,6 +2,225 @@
 
 my dotfiles
 
+## Nushell bootstrap (Windows and macOS)
+
+Start with a copy of this repository and:
+
+- **Windows:** Nushell installed through WinGet, with WinGet on PATH. File
+  symlinks require Developer Mode or an elevated Nu terminal. The installer
+  checks that permission before changing configs or installing packages; it
+  does not change Windows security settings. Package installers may show UAC.
+- **macOS:** Nushell and Homebrew installed. If Apple's Command Line Tools are
+  missing, finish the prompted installation and rerun the bootstrap.
+
+Run from the checkout (it does not have to be `~/dots`):
+
+```nu
+nu --no-config-file bootstrap.nu --dry-run
+nu --no-config-file bootstrap.nu
+```
+
+The Nu installer installs mise if missing, connects the shared mise config,
+uses its `[bootstrap.packages]` to install missing WinGet/Homebrew packages,
+ensures compiler prerequisites, then installs missing `[tools]` with mise.
+`mise/config.toml` is the only package/tool list. WinGet is preferred for Windows
+system packages; no Scoop fallback is currently needed. Ripgrep and Carapace
+are mise-managed. The Windows C++ check verifies both the compiler and Windows
+SDK, and adds the Visual C++ workload when either is missing. A required reboot
+stops setup with instructions to rerun afterward. On Intel Macs, bootstrap applies
+those same package declarations through the installed Homebrew CLI because mise's
+native Homebrew manager supports only Apple Silicon on macOS.
+
+Use **this Nu entrypoint** for full machine setup. `mise install` alone does not
+install system packages or configure compiler workloads. Bootstrap doesn't
+force upgrades of already-installed system applications.
+
+### Connected configs
+
+| Shared source | Destination |
+| --- | --- |
+| `mise/config.toml` | `~/.config/mise/config.toml` by default |
+| `nushell/env.nu`, `nushell/config.nu` | Nu's own startup paths |
+| `wezterm/` | `~/.config/wezterm` (respects XDG on macOS) |
+| `jj/config.toml` | jj's user config path; `%APPDATA%/jj/config.toml` on fresh Windows |
+| `herdr/config.toml` | `%APPDATA%/herdr/config.toml` on Windows; `~/.config/herdr/config.toml` on macOS |
+| `git/config`, `git/ignore` | `~/.gitconfig`, `~/.gitignore` |
+| `.tmux.conf`, `zellij/config.kdl` | `~/.tmux.conf`, `~/.config/zellij/config.kdl` on macOS only |
+
+Nu supplies its startup paths; the bootstrap respects its config-home override
+and mise's `MISE_GLOBAL_CONFIG_FILE`, `MISE_CONFIG_DIR`, and `XDG_CONFIG_HOME`.
+Existing non-conflicting files are preserved in sibling `.before-dots-<uuid>`
+backups. Correct links are left alone, including the older mise directory link.
+Conflicting directories stop setup. WezTerm uses a directory junction on Windows.
+There is no file-copy fallback: edits through connected configs update dots.
+
+Existing `~/.gitconfig` is preserved as **`~/.gitconfig.local`**, which the shared
+config includes. Keep machine-local SSH/credential settings there, not in the
+symlinked shared file. If both files already exist before migration, setup stops
+rather than guessing how to merge them. `core.excludesfile = ~/.gitignore` uses
+Git's home expansion on both platforms; `git/ignore` starts empty. Existing global
+ignore contents are backed up for review, not silently copied into the repo.
+
+The macOS bootstrap also installs WezTerm terminfo into `~/.terminfo`. WezTerm
+starts Nu on both platforms; macOS Nu sets `SHELL` for tmux/Zellij child panes.
+The system login shell and all Zsh startup files are unchanged. WezTerm already
+bundles the configured JetBrains Mono font.
+
+### Interactive Nu
+
+- Vi editing, mise/zoxide, and Carapace external completions. Completion bridges
+  to Bash/Zsh/Fish are disabled; aliases such as `j` and `dco` keep their expansion.
+- `pbcopy` / `pbpaste` use the native macOS or Windows clipboard, preserving UTF-8
+  text without adding a newline.
+- `commit` accepts a message argument or piped text; no input opens jj's editor.
+  `bump` moves the current bookmark to `@-` and refuses ambiguous/absent bookmarks.
+- `dco` aliases `docker compose`; Docker itself is not installed.
+- `BAT_THEME=ansi`; `EDITOR`/`VISUAL` default to Neovim without overriding an
+  inherited editor. macOS keeps `GOPATH=~/proj/go`, Fly, and Obsidian paths.
+- `l` is Nu's structured `ls --all --long`, not an exact eza clone. `reload`
+  replaces the shell; temporary variables and definitions are lost.
+
+Nu history remains local; Atuin and Starship are separate work. Bootstrap
+regenerates zoxide's integration in `$nu.data-dir/zoxide.nu`; rerun it after a
+zoxide upgrade. Mise's session-dependent integration is regenerated at startup.
+
+Neovim and its config are **entirely separate**, including Windows config links.
+The jj diff/merge editor expects the custom Neovim commands already installed
+there. This bootstrap does not install Docker/Postgres, enroll secrets or
+configure SSH authentication, migrate Yazi, or configure macOS desktop applications.
+Linux and Termux remain on the existing installers below for now.
+
+### Automatic secrets (Windows and macOS)
+
+Bootstrap installs fnox, age, and the 1Password CLI. After opening a new Nu session,
+run the one-time device setup:
+
+```nu
+secrets setup
+```
+
+This creates a separate age identity for this device and stores its private key
+in Windows Credential Manager or macOS Keychain. It also creates an empty,
+commented `sources.toml` template if missing. Repeating setup preserves existing
+references, identity, and cache. Both `sources.toml` and the encrypted
+`config.toml` stay in `~/.config/fnox/` (or `$env.FNOX_CONFIG_DIR`),
+**outside dots and not symlinked**. An unrelated existing fnox config stops
+enrollment rather than being overwritten.
+
+To create only the reference template, without enrolling a device or fetching
+anything, run:
+
+```nu
+secrets init
+```
+
+The command prints its path and never overwrites an existing file. Add your
+variables under `[secrets]` in that **private** `sources.toml`:
+
+```toml
+[secrets]
+OPENAI_API_KEY = { provider = "onepassword", value = "op://Vault/Item/credential" }
+```
+
+Enter actual values in 1Password, not this file or shell command arguments.
+Enable 1Password CLI access/sign in, then fetch and encrypt the values locally:
+
+```nu
+secrets refresh
+```
+
+Refresh also updates the current Nu environment and removes cached variables whose
+mappings were deleted. Repeat it after adding references or rotating keys; existing
+child processes need restarting to see updates. `DOTS_AGE_IDENTITY` is reserved
+for the device identity and is never exported.
+
+New Nu sessions automatically decrypt the local cache into their environment.
+Pi and other child processes inherit those variables without a wrapper or another
+1Password call. Startup does not discover project fnox files, run a daemon, or
+fetch missing secrets remotely. A new mapping without a cached value tells you
+to run `secrets refresh`; decryption failures are reported. Nu remains usable
+before enrollment. Locking 1Password does not lock the independent local cache.
+
+For fast startup, `dots-fnox-path` beside the device config caches only fnox's
+executable path, never decrypted keys. Setup and refresh update it; a missing
+cache or executable is re-resolved automatically. After upgrading fnox, run
+`secrets setup` to select the new executable without contacting 1Password.
+
+To check without displaying a key, use its presence rather than its value:
+
+```nu
+$env.OPENAI_API_KEY? != null
+nu --no-config-file -c '$env.OPENAI_API_KEY? != null'
+```
+
+On a second Windows machine or Mac, run `secrets setup` and `secrets refresh`
+there too, and populate that device's private `sources.toml`. Actual service,
+vault, item, and field references are not stored in this repository; only the
+empty template is shared. If moving from the old repository-local
+`fnox/sources.toml`, move it to the private fnox directory before starting a new
+shell; that old repository path is now ignored. Do not share device identities
+or encrypted caches. The old Zsh setup and Linux/Termux integration are unchanged.
+
+### macOS setup and smoke test
+
+1. Get the updated checkout onto your Mac. In your existing terminal, install
+   Nushell if needed, then enter the checkout (adjust the path as appropriate):
+
+   ```sh
+   brew install nushell
+   cd ~/dots
+   ```
+
+2. Preview the changes, inspect any conflicts, then run the bootstrap:
+
+   ```sh
+   nu --no-config-file bootstrap.nu --dry-run
+   nu --no-config-file bootstrap.nu
+   ```
+
+   If a directory conflict is reported, inspect and preserve it before proceeding;
+   don't blindly delete it. If prompted for Apple's Command Line Tools, finish
+   their installation and rerun. Tool installation can take a while. Use this Nu
+   entrypoint rather than `install.sh` for the migration.
+
+3. After setup succeeds, safely close your WezTerm sessions and fully quit the
+   application. Reopen it **from the Dock or Finder**, not another terminal. It
+   should start Nu without an executable-not-found error; this checks that the
+   launch PATH works without inheriting your old shell's environment.
+
+4. In the new Nu pane, check the tools and shell configuration:
+
+   ```nu
+   version
+   which mise jj rg carapace zoxide
+   $env.SHELL
+   $env.config.edit_mode
+   jj config path --user
+   ```
+
+   Each tool should resolve, `SHELL` should point to Nu, and editing mode should
+   be `vi`. Type `j --` and press Tab to check completions. Start fresh tmux and
+   Zellij sessions and confirm their new panes also start Nu.
+
+5. Optionally test clipboard round-tripping. **This replaces your clipboard:**
+
+   ```nu
+   "dots mac test ✓" | pbcopy
+   pbpaste
+   ```
+
+   The pasted text should match, including the check mark.
+
+6. From the checkout, repeat the dry-run. Config links should report
+   **Already connected**. Rerunning the full bootstrap also checks repeat setup;
+   existing system packages are skipped, while missing mise tools are installed
+   and generated integrations are refreshed. Mise tools configured as `latest`
+   can pick up newer releases.
+
+If a check fails, keep the failing command and complete error output, and note
+whether the Mac is Intel or Apple Silicon. Passing checks on Windows does not
+replace this macOS smoke test.
+
 ## install
 
 ```bash
@@ -21,7 +240,6 @@ This will symlink:
 - `.zshrc` → `~/.zshrc`
 - `.zprofile` → `~/.zprofile`
 - `.tmux.conf` → `~/.tmux.conf`
-- `opencode.json` → `~/.config/opencode/opencode.json`
 - `starship.toml` → `~/.config/starship.toml`
 - `wezterm/` → `~/.config/wezterm`
 - `mise/` → `~/.config/mise`
