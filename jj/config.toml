@@ -79,27 +79,28 @@ if(
     "author: " ++ format_commit_signature(self.author()) ++ "\n"
 '''
 
-# Preserve Neovim's appearance handling without a shell-based pager.
+# Avoid terminal appearance queries inside Neovim.
 [[--scope]]
 --when.environments = ["NVIM"]
 [--scope.ui]
 pager = ["delta", "--detect-dark-light=never", "--pager", "less -FRX"]
-
-[[--scope.--scope]]
---when.environments = ["WEZTERM_APPEARANCE=dark"]
-[--scope.--scope.ui]
-pager = ["delta", "--dark", "--detect-dark-light=never", "--pager", "less -FRX"]
-
-[[--scope.--scope]]
---when.environments = ["WEZTERM_APPEARANCE=light"]
-[--scope.--scope.ui]
-pager = ["delta", "--light", "--detect-dark-light=never", "--pager", "less -FRX"]
 
 # A present but empty NVIM is not an active editor session.
 [[--scope.--scope]]
 --when.environments = ["NVIM="]
 [--scope.--scope.ui]
 pager = ["delta", "--pager", "less -FRX"]
+
+# Honor WezTerm's appearance in ordinary shells as well as Neovim.
+[[--scope]]
+--when.environments = ["WEZTERM_APPEARANCE=dark"]
+[--scope.ui]
+pager = ["delta", "--dark", "--detect-dark-light=never", "--pager", "less -FRX"]
+
+[[--scope]]
+--when.environments = ["WEZTERM_APPEARANCE=light"]
+[--scope.ui]
+pager = ["delta", "--light", "--detect-dark-light=never", "--pager", "less -FRX"]
 
 # Linux/Termux keep their existing track command until their Nu migration.
 [[--scope]]

@@ -178,6 +178,7 @@ def main [
     print $"Will apply system packages: ($packages | str join ', ')"
     print "Will ensure compiler prerequisites, then install missing mise tools."
     print $"Will generate zoxide integration: ($zoxide_init)"
+    print "Will install native fnox integration through secrets setup-shell (no credential enrollment)."
     if $nu.os-info.name == "macos" { print "Will install WezTerm terminfo into ~/.terminfo." }
     if $dry_run { return }
 
@@ -223,6 +224,7 @@ def main [
     let zoxide_script = (do --capture-errors { ^$zoxide init nushell })
     mkdir ($zoxide_init | path dirname)
     $zoxide_script | save --force $zoxide_init
+    secrets setup-shell
     for link in ($links | skip 1) {
         connect-config $link.source $link.destination $link.backup
     }

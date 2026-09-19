@@ -37,6 +37,9 @@ alias reload = exec nu
 const links_module = path self | path expand | path dirname | path join "links.nu"
 use $links_module symlink
 
+const secrets_module = path self | path expand | path dirname | path join "secrets.nu"
+use $secrets_module
+
 const codex_usage_module = path self | path expand | path dirname | path join "codex-usage.nu"
 use $codex_usage_module
 
