@@ -1,4 +1,5 @@
 $env.BAT_THEME = "ansi"
+$env.PAGER = "ov -F"
 if $env.EDITOR? == null { $env.EDITOR = "nvim" }
 if $env.VISUAL? == null { $env.VISUAL = $env.EDITOR }
 

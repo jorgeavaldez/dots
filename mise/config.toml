@@ -76,6 +76,7 @@ age = "latest"
 fnox = { version = "latest", os = ["windows", "macos"] }
 "github:vercel-labs/agent-browser" = "latest"
 bat = "latest"
+"github:noborus/ov" = "latest"
 
 # Windows binaries from LuaBinaries, linked by https://www.lua.org/download.html.
 # SHA-256 pins the trusted first download, not a signature from the Lua authors.

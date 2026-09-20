@@ -57,6 +57,7 @@ elif [[ -o interactive && "$OSTYPE" == linux* && ! -S "${SSH_AUTH_SOCK:-}" ]] &&
 fi
 
 export EDITOR="nvim"
+export PAGER="ov -F"
 export BAT_THEME="ansi"
 export GOOSE_CLI_THEME="ansi"
 

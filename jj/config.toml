@@ -5,7 +5,7 @@ name = "Jorge Valdez"
 email = "jorge@yung.dev"
 
 [ui]
-pager = ["delta", "--pager", "less -FRX"]
+pager = ["delta", "--pager", "ov -F"]
 diff-formatter = ":git"
 diff-editor = ["nvim", "-c", "DiffEditor $left $right $output"]
 merge-editor = "diffconflicts"
@@ -83,24 +83,24 @@ if(
 [[--scope]]
 --when.environments = ["NVIM"]
 [--scope.ui]
-pager = ["delta", "--detect-dark-light=never", "--pager", "less -FRX"]
+pager = ["delta", "--detect-dark-light=never", "--pager", "ov -F"]
 
 # A present but empty NVIM is not an active editor session.
 [[--scope.--scope]]
 --when.environments = ["NVIM="]
 [--scope.--scope.ui]
-pager = ["delta", "--pager", "less -FRX"]
+pager = ["delta", "--pager", "ov -F"]
 
 # Honor WezTerm's appearance in ordinary shells as well as Neovim.
 [[--scope]]
 --when.environments = ["WEZTERM_APPEARANCE=dark"]
 [--scope.ui]
-pager = ["delta", "--dark", "--detect-dark-light=never", "--pager", "less -FRX"]
+pager = ["delta", "--dark", "--detect-dark-light=never", "--pager", "ov -F"]
 
 [[--scope]]
 --when.environments = ["WEZTERM_APPEARANCE=light"]
 [--scope.ui]
-pager = ["delta", "--light", "--detect-dark-light=never", "--pager", "less -FRX"]
+pager = ["delta", "--light", "--detect-dark-light=never", "--pager", "ov -F"]
 
 # Linux/Termux keep their existing track command until their Nu migration.
 [[--scope]]

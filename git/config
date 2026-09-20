@@ -13,6 +13,7 @@
 	diffFilter = delta --color-only --features=interactive
 
 [delta]
+	pager = ov -F
 	navigate = true
 	features = decorations
 	line-numbers = true
