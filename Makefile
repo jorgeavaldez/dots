@@ -1,5 +1,9 @@
 .PHONY: help shell-files format lint check clean
 
+ifeq ($(OS),Windows_NT)
+SHELL := bash
+endif
+
 SHFMT_FLAGS := -i 4 -ci
 SHELL_FILES_CMD := ./scripts/list_shell_files.sh
 

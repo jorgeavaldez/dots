@@ -45,3 +45,5 @@
 # Keep host-specific SSH/credential settings out of this symlinked file.
 [include]
 	path = ~/.gitconfig.local
+[windows]
+	appendAtomically = false

@@ -43,6 +43,7 @@ zoxide = "latest"
 claude-code = "latest"
 shfmt = "latest"
 cmake = "latest"
+"conda:make" = { version = "4.4.1", os = ["windows"] }
 shellcheck = "latest"
 delta = "latest"
 "npm:obsidian-headless" = "latest"
@@ -80,6 +81,7 @@ fnox = "latest"
 twg = { version = "latest", bin = "twg", checksum_url = "https://teamwork-graph.atlassian.com/cli/SHA256SUMS-v{{ version }}", platforms = { windows-arm64 = { bin = "twg.exe", url = "https://teamwork-graph.atlassian.com/cli/twg-windows-arm64-v{{ version }}.exe" }, windows-x64 = { bin = "twg.exe", url = "https://teamwork-graph.atlassian.com/cli/twg-windows-x64-v{{ version }}.exe" } }, url = 'https://teamwork-graph.atlassian.com/cli/twg-{{ os(macos="darwin") }}-{{ arch() }}-v{{ version }}', version_json_path = ".version", version_list_url = "https://teamwork-graph.atlassian.com/cli/manifest.json" }
 bat = "latest"
 "github:noborus/ov" = "latest"
+"aqua:LuaLS/lua-language-server" = "latest"
 
 # Windows binaries from LuaBinaries, linked by https://www.lua.org/download.html.
 # SHA-256 pins the trusted first download, not a signature from the Lua authors.

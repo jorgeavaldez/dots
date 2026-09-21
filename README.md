@@ -141,18 +141,27 @@ The command prints its path and never overwrites an existing file. Add your
 variables under `[secrets]` in that **private** `sources.toml`:
 
 ```toml
+[providers.onepassword]
+type = "1password"
+
 [secrets]
 OPENAI_API_KEY = { provider = "onepassword", value = "op://Vault/Item/credential" }
+HOMELAB_URL = { default = "https://example.invalid" }
 ```
 
-Enter actual values in 1Password, not this file or shell command arguments.
-Enable 1Password CLI access/sign in, then fetch and encrypt the values locally:
+`default` stores a non-sensitive, device-specific value in plaintext in the
+private source file; never put credentials there. Provider-backed entries can
+use any fnox source provider configured in this file, not just 1Password.
+For 1Password, enter actual credentials there, not in this file or shell
+command arguments. Authenticate with your source provider, then fetch and
+encrypt the values locally:
 
 ```nu
 secrets refresh
 ```
 
-Refresh updates the global cache and removes entries whose mappings were deleted.
+Refresh encrypts both provider-backed and plaintext-default entries into the
+local age cache and removes entries whose mappings were deleted.
 fnox's native shell hook applies the changes at the next prompt. Repeat refresh
 after adding references or rotating keys; existing child processes need restarting
 to see updates. `DOTS_AGE_IDENTITY` is reserved for the device identity and is
@@ -212,8 +221,8 @@ nu --no-config-file -c '$env.OPENAI_API_KEY? != null'
 
 On a second Windows machine or Mac, run `secrets setup` and `secrets refresh`
 there too, and populate that device's private `sources.toml`. Actual service,
-vault, item, and field references are not stored in this repository; only the
-empty template is shared. If moving from the old repository-local
+vault, item, and field references and plaintext defaults are not stored in this
+repository; only the empty template is shared. If moving from the old repository-local
 `fnox/sources.toml`, move it to the private fnox directory before starting a new
 shell; that old repository path is now ignored. Do not share device identities
 or encrypted caches. For each project on the new device, check out its references

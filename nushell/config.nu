@@ -43,6 +43,9 @@ use $secrets_module
 const codex_usage_module = path self | path expand | path dirname | path join "codex-usage.nu"
 use $codex_usage_module
 
+const tools_module = path self | path expand | path dirname | path join "tools.nu"
+use $tools_module
+
 # Remove only links, never their targets or ordinary files/directories.
 def rmsymlink [link: path] {
     let link = $link | path expand --no-symlink

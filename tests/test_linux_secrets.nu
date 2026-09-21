@@ -295,6 +295,51 @@ export def cases [] {
             }
         }
         {
+            name: test_refresh_encrypts_plaintext_defaults_alongside_provider_sources
+            run: {|base|
+                let f = secret-fixture $base
+                secrets $f 'secrets setup' | ignore
+                let sources = $f.config | path dirname | path join sources.toml
+                put $sources (open --raw $f.config | str replace --all dots-age source-age)
+                fnox $f [
+                    --config
+                    $sources
+                    set
+                    REMOTE
+                    --provider
+                    source-age
+                ] --input synthetic-remote | ignore
+                let source_config = open $sources
+                $source_config | update secrets (
+                    $source_config.secrets
+                    | upsert LOCAL {default: 'https://example.invalid/one'}
+                ) | to toml | save --force $sources
+                secrets $f 'secrets refresh' | ignore
+                assert equal ((fnox $f [get REMOTE]).stdout | str trim) synthetic-remote
+                assert equal ((fnox $f [get LOCAL]).stdout | str trim) 'https://example.invalid/one'
+                lacks (open --raw $f.config) 'https://example.invalid/one'
+                op-absent $f
+
+                let before = open --raw $f.config
+                put $sources '[secrets]
+LOCAL = { default = "https://example.invalid/two" }
+BAD = { provider = "missing", value = "invalid" }
+'
+                secrets $f 'secrets refresh' --fail | ignore
+                assert equal (open --raw $f.config) $before
+                no-staging $f '.dots-refresh-*'
+
+                put $sources '[secrets]
+LOCAL = { default = "https://example.invalid/two" }
+'
+                secrets $f 'secrets refresh' | ignore
+                assert equal ((fnox $f [get LOCAL]).stdout | str trim) 'https://example.invalid/two'
+                assert not ('REMOTE' in ((open $f.config).secrets | columns))
+                lacks (open --raw $f.config) 'https://example.invalid/two'
+                op-absent $f
+            }
+        }
+        {
             name: test_init_creates_private_sources_and_has_no_module_side_effects
             run: {|base|
                 let f = secret-fixture $base

@@ -74,9 +74,11 @@ When restoring a cache, preserve the destination `dots-age.key_file` path and
 provider name and verify decryption with `fnox check`/`fnox exec` before relying
 on it. Do not forward or copy a new device's private key just to refresh it.
 
-## Optional desktop source refresh
+## Optional source refresh
 
-On a Linux desktop with the 1Password CLI installed and authenticated:
+On a device with access to the configured source provider (1Password requires
+an installed, authenticated `op` CLI), or with device-specific non-sensitive
+plaintext defaults:
 
 1. In Nu, create the template if needed and open the **device-local** file in
    Neovim. This respects `FNOX_CONFIG_DIR`; replace `nvim` with your editor if
@@ -88,8 +90,9 @@ On a Linux desktop with the 1Password CLI installed and authenticated:
    ^nvim $sources
    ```
 
-2. Keep the `[providers.onepassword]` section. Under the existing `[secrets]`
-   section, uncomment or add one entry per environment variable. For example:
+2. Keep `[providers.onepassword]` if using 1Password, or configure another fnox
+   source provider. Under the existing `[secrets]` section, add one entry per
+   environment variable. For example:
 
    ```toml
    [providers.onepassword]
@@ -97,9 +100,12 @@ On a Linux desktop with the 1Password CLI installed and authenticated:
 
    [secrets]
    OPENAI_API_KEY = { provider = "onepassword", value = "op://Vault/Item/credential" }
+   HOMELAB_URL = { default = "https://example.invalid" }
    ```
 
-   Replace `op://Vault/Item/credential` with that field's **secret reference**, not
+   `default` is plaintext in the private source file; use it only for
+   non-sensitive, device-specific values such as service URLs. Replace
+   `op://Vault/Item/credential` with that field's **secret reference**, not
    its actual value. You can copy the reference from the 1Password desktop app;
    see [1Password's secret reference guide](https://developer.1password.com/docs/cli/secret-references/).
    The variable name on the left is what child processes receive. Add entries to
@@ -124,10 +130,11 @@ On a Linux desktop with the 1Password CLI installed and authenticated:
    $env.OPENAI_API_KEY? != null
    ```
 
-Refresh resolves sources and stages a replacement encrypted global cache; failed
-source access leaves the live cache intact. Other fnox source providers can also
-be configured in `sources.toml`; use a provider name other than the destination
-`dots-age`. Each requested source must produce a `dots-age` encrypted result.
+Refresh syncs provider-backed entries and encrypts plaintext-default entries
+into a staged global age cache; failed source access leaves the live cache intact.
+Other fnox source providers can be configured in `sources.toml`; use a provider
+name other than the destination `dots-age`. Each provider-backed source must
+produce a `dots-age` encrypted result.
 
 **`op://` references cannot resolve offline by themselves.** A device without
 `op` can read an already-populated local age cache, but cannot refresh 1Password

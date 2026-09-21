@@ -33,14 +33,24 @@ def main [mode: string, ...files: string] {
         let cache = $sandbox | path join cache
         let data = $sandbox | path join data
         mkdir $home $config $cache $data
+        # MSYS env.exe converts POSIX PATH for native Windows programs. Preserve
+        # PATHEXT so Nu can find extensionless commands such as `mise`.
+        let path = if $nu.os-info.name == 'windows' {
+            ^cygpath -u -p ($env.PATH | str join (char esep)) | str trim
+        } else {
+            $env.PATH | str join (char esep)
+        }
         let isolated = [
             '-i'
-            $"PATH=($env.PATH | str join (char esep))"
+            $"PATH=($path)"
             $"HOME=($home)"
             $"XDG_CONFIG_HOME=($config)"
             $"XDG_CACHE_HOME=($cache)"
             $"XDG_DATA_HOME=($data)"
         ]
+        let isolated = if $nu.os-info.name == 'windows' {
+            $isolated | append $"PATHEXT=($env.PATHEXT)"
+        } else { $isolated }
         # Generate real parse-time imports outside the checkout, never startup,
         # bootstrap, fnox hooks, or secrets. Each generator status is checked.
         do {

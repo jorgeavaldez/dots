@@ -27,12 +27,14 @@ export def init [] {
         if $nu.os-info.name == "linux" {
             do --capture-errors { ^chmod 700 ($sources | path dirname) }
         }
-        '# Private 1Password references. Keep this file outside dots.
+        '# Private source map. Keep this file outside dots.
 [providers.onepassword]
 type = "1password"
 
 [secrets]
 # OPENAI_API_KEY = { provider = "onepassword", value = "op://Vault/Item/credential" }
+# Non-sensitive, device-specific values can be stored here as plaintext defaults.
+# HOMELAB_URL = { default = "https://example.invalid" }
 ' | save $sources
         if $nu.os-info.name == "linux" {
             do --capture-errors { ^chmod 600 $sources }
@@ -230,11 +232,16 @@ export def refresh [] {
     let sources = (sources-path)
     if not ($sources | path exists) { error make {msg: "Run secrets init to create your private sources.toml."} }
 
-    let names = open $sources | get secrets | columns
+    let entries = open $sources | get secrets
+    let names = $entries | columns
     if "DOTS_AGE_IDENTITY" in $names {
         error make {msg: "DOTS_AGE_IDENTITY is reserved for the device key."}
     }
 
+    let plaintext = ($entries | transpose name secret | where {|entry|
+        $entry.secret.default? != null and $entry.secret.provider? == null and $entry.secret.value? == null
+    } | get name)
+    let sourced = $names | where {|name| $name not-in $plaintext }
     let fnox = (installed-tool fnox)
     let removed = ($local.secrets | transpose name secret | where {|entry|
         $entry.secret.provider? == "dots-age" and $entry.name not-in $names
@@ -249,17 +256,29 @@ export def refresh [] {
             do --capture-errors { ^chmod 700 $staging }
         }
         cp $config $pending
-        if ($names | is-not-empty) {
+        if ($sourced | is-not-empty) {
             let result = (with-env {FNOX_CONFIG_DIR: $staging} {
-                ^$fnox --config $sources --profile default --no-daemon --if-missing error sync --global --provider dots-age --force ...$names | complete
+                ^$fnox --config $sources --profile default --no-daemon --non-interactive --if-missing error sync --global --provider dots-age --force ...$sourced | complete
             })
             if $result.exit_code != 0 {
-                error make {msg: $"Secrets refresh failed (fnox exit ($result.exit_code)). Check source-provider access and the references in ($sources). 1Password references require an installed, authenticated op CLI. The previous cache and shell environment were preserved."}
+                error make {msg: $"Secrets refresh failed (fnox exit ($result.exit_code)). Check source-provider access and the references in ($sources). The previous cache and shell environment were preserved."}
+            }
+        }
+        for name in $plaintext {
+            let stored = (
+                $entries
+                | get $name
+                | get default
+                | ^$fnox --config $pending --profile default --no-daemon --non-interactive set $name --provider dots-age
+                | complete
+            )
+            if $stored.exit_code != 0 {
+                error make {msg: $"Could not encrypt ($name) into the staged cache (fnox exit ($stored.exit_code)). The previous cache was preserved."}
             }
         }
         let updated = (open $pending)
         mut cache = $updated.secrets
-        for name in $names {
+        for name in $sourced {
             let secret = $cache | get $name
             # fnox keeps the remote reference plus an encrypted sync stanza.
             # Keep global shell keys local-only; remote references stay in sources.toml.
