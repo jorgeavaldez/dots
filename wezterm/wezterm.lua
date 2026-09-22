@@ -10,8 +10,11 @@ if is_windows then
 	-- Windows OpenSSH uses 1Password's named pipe when SSH_AUTH_SOCK is unset.
 	config.mux_enable_ssh_agent = false
 elseif wezterm.target_triple:find("apple") then
-	-- Finder/Dock launches do not inherit the shell's Homebrew PATH.
-	config.set_environment_variables.PATH = "/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/local/sbin:"
+	-- Finder/Dock launches need Nu's mise shim and mise itself before activation.
+	config.set_environment_variables.PATH = wezterm.home_dir
+		.. "/.local/share/mise/shims:"
+		.. wezterm.home_dir
+		.. "/.local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/local/sbin:"
 		.. os.getenv("PATH")
 	config.default_prog = { "nu" }
 else

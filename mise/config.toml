@@ -77,6 +77,7 @@ zmx = "latest"
 age = "latest"
 fnox = "latest"
 "github:vercel-labs/agent-browser" = "latest"
+twg = { version = "latest", bin = "twg", checksum_url = "https://teamwork-graph.atlassian.com/cli/SHA256SUMS-v{{ version }}", platforms = { windows-arm64 = { bin = "twg.exe", url = "https://teamwork-graph.atlassian.com/cli/twg-windows-arm64-v{{ version }}.exe" }, windows-x64 = { bin = "twg.exe", url = "https://teamwork-graph.atlassian.com/cli/twg-windows-x64-v{{ version }}.exe" } }, url = 'https://teamwork-graph.atlassian.com/cli/twg-{{ os(macos="darwin") }}-{{ arch() }}-v{{ version }}', version_json_path = ".version", version_list_url = "https://teamwork-graph.atlassian.com/cli/manifest.json" }
 bat = "latest"
 "github:noborus/ov" = "latest"
 
@@ -103,7 +104,7 @@ rename_exe = { "lua[0-9]*.exe" = "lua.exe", "luac[0-9]*.exe" = "luac.exe", "wlua
 "brew:autoconf" = { os = "macos" }
 "brew:openssl@3" = { os = "macos" }
 "brew:pkgconf" = { os = "macos" }
-"brew-cask:wezterm" = { os = "macos" }
+"brew-cask:wezterm@nightly" = { os = "macos" }
 
 [settings]
 idiomatic_version_file_enable_tools = ["python"]
