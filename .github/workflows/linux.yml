@@ -16,9 +16,9 @@ jobs:
       matrix:
         include:
           - image: debian:bookworm
-            seed: apt-get update && apt-get install -y ca-certificates curl git python3 build-essential xz-utils ncurses-bin
+            seed: apt-get update && apt-get install -y ca-certificates curl git build-essential xz-utils ncurses-bin
           - image: archlinux:base-devel
-            seed: pacman -Syu --noconfirm --needed ca-certificates curl git python base-devel xz ncurses
+            seed: pacman -Syu --noconfirm --needed ca-certificates curl git base-devel xz ncurses
     container: ${{ matrix.image }}
     steps:
       # Disposable CI images need provisioning. Bootstrap itself never does this.
@@ -29,8 +29,11 @@ jobs:
         with:
           install: false
           cache: false
-      - name: Install test tools only
-        run: mise install nu@0.115.1 fnox@1.35.2 age@1.3.2 lua@5.5.1 shfmt@3.14.1 zoxide@0.10.0
+      - name: Install test and lint tools only
+        run: |
+          mise install nu@0.115.1 fnox@1.35.2 age@1.3.2 shfmt@3.14.1 zoxide@0.10.0 rust@1.95.0
+          # nufmt has no published releases: pin the upstream source revision.
+          mise exec rust@1.95.0 -- cargo install --locked --git https://github.com/nushell/nufmt --rev 24023665d1c2661addb22dce384b53d4a839727f --root "$RUNNER_TEMP/nufmt"
       - name: Run isolated Linux tests
         shell: bash
         run: |
@@ -38,6 +41,7 @@ jobs:
           export FNOX_BIN="$(mise exec fnox@1.35.2 -- which fnox)"
           export ZOXIDE_BIN="$(mise exec zoxide@0.10.0 -- which zoxide)"
           export AGE_KEYGEN_BIN="$(mise exec age@1.3.2 -- which age-keygen)"
-          python3 -m unittest discover -s tests -p 'test_*.py' -v
-          mise exec lua@5.5.1 -- lua tests/test_wezterm.lua "$PWD"
-          mise exec shfmt@3.14.1 -- make lint
+          export TMPDIR="$RUNNER_TEMP"
+          "$NU_BIN" --no-config-file tests/run.nu
+      - name: Check shell formatting and Nushell syntax
+        run: PATH="$RUNNER_TEMP/nufmt/bin:$PATH" mise exec nu@0.115.1 shfmt@3.14.1 zoxide@0.10.0 -- make lint

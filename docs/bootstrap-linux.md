@@ -37,19 +37,47 @@ Preflight checks all managed links before installation. Existing files get
 and an occupied Git backup abort instead of deleting local state. Already
 connected links are left alone on reruns.
 
+## Desktop smoke check
+
+The automated tests do not launch WezTerm or exercise a desktop clipboard.
+After bootstrap, fully quit WezTerm and reopen it from the desktop launcher
+(not from an already configured terminal). Confirm it starts Nu and run:
+
+```nu
+$nu.current-exe
+which mise nu
+$env.SHELL
+```
+
+Nu should be the running shell, mise and Nu should resolve, and `SHELL` should
+point to Nu. Open a new tmux/Zellij session to check new panes also start Nu.
+For a clipboard round-trip, run the following **only if replacing your current
+clipboard is okay**:
+
+```nu
+"dots linux check ✓" | pbcopy
+pbpaste
+```
+
+The pasted text should match. This checks the real Wayland/X11 connection;
+a test double cannot verify desktop launch or clipboard behavior.
+
 ## Integration tests
 
 ```sh
-NU_BIN=/absolute/path/to/nu \
-FNOX_BIN=/absolute/path/to/fnox \
-ZOXIDE_BIN=/absolute/path/to/zoxide \
-python3 -m unittest discover -s tests -p test_bootstrap.py -v
+export NU_BIN=/absolute/path/to/nu
+export FNOX_BIN=/absolute/path/to/fnox
+export AGE_KEYGEN_BIN=/absolute/path/to/age-keygen
+export ZOXIDE_BIN=/absolute/path/to/zoxide
+export TMPDIR=/existing/scratch/directory
+"$NU_BIN" --no-config-file tests/run.nu
 ```
 
 Tests run on Linux with isolated HOME, XDG directories and temporary files.
 Nu, fnox activation, zoxide generation, symlinks and terminfo compilation are
 real; only the mise installation/resolution boundary is substituted to avoid
-bulk tool installation. The real WezTerm terminfo is downloaded. Set all three
-binary paths to avoid skips, and have `tic` available. These tests exercise the
+bulk tool installation. The real WezTerm terminfo is downloaded. Set the required
+tool paths, including age-keygen, and have `tic` available. Missing tools fail
+explicitly. See [the Nu test guide](test-nushell.md) for the full suite. These tests exercise the
 shared Linux path, not separate Arch/Debian virtual machines or native
 Windows/macOS execution.

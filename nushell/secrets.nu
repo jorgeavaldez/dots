@@ -24,7 +24,9 @@ export def init [] {
     let sources = (sources-path)
     if not ($sources | path exists) {
         mkdir ($sources | path dirname)
-        if $nu.os-info.name == "linux" { do --capture-errors { ^chmod 700 ($sources | path dirname) } }
+        if $nu.os-info.name == "linux" {
+            do --capture-errors { ^chmod 700 ($sources | path dirname) }
+        }
         '# Private 1Password references. Keep this file outside dots.
 [providers.onepassword]
 type = "1password"
@@ -32,7 +34,9 @@ type = "1password"
 [secrets]
 # OPENAI_API_KEY = { provider = "onepassword", value = "op://Vault/Item/credential" }
 ' | save $sources
-        if $nu.os-info.name == "linux" { do --capture-errors { ^chmod 600 $sources } }
+        if $nu.os-info.name == "linux" {
+            do --capture-errors { ^chmod 600 $sources }
+        }
         print $"Created empty secrets template: ($sources)"
     } else {
         print $"Existing secrets references preserved: ($sources)"
@@ -50,8 +54,8 @@ export def setup-shell [] {
 }
 
 # Linux uses a private file, not a desktop keychain or an SSH agent.
-def setup-linux [identity_file: any] {
-    let directory = (config-path | path dirname)
+def setup-linux [identity_file] {
+    let directory = config-path | path dirname
     mkdir $directory
     do --capture-errors { ^chmod 700 $directory }
     let lock = $directory | path join ".dots-setup.lock"
@@ -70,7 +74,7 @@ def setup-linux [identity_file: any] {
 }
 
 # All existing-config and orphan-identity checks run while holding the lock.
-def setup-linux-locked [identity_file: any] {
+def setup-linux-locked [identity_file] {
     let config = (config-path)
     let key = $config | path dirname | path join "age.txt"
     let age_keygen = (installed-tool age-keygen)
@@ -111,13 +115,23 @@ def setup-linux-locked [identity_file: any] {
         let recipient = (^$age_keygen -y $pending_key | complete)
         if $recipient.exit_code != 0 { error make {msg: "Could not derive the device age recipient."} }
         let settings = {
-            providers: {dots-age: {type: "age", recipients: [($recipient.stdout | str trim)], key_file: $key}}
+            providers: {
+                dots-age: {
+                    type: "age"
+                    recipients: [
+                        ($recipient.stdout | str trim)
+                    ]
+                    key_file: $key
+                }
+            }
             secrets: {}
         }
         let pending_config = $pending | path join "config.toml"
         $settings | to toml | save $pending_config
         do --capture-errors { ^chmod 600 $pending_config }
-        if not ($key | path exists) { mv $pending_key $key } else { do --capture-errors { ^chmod 600 $key } }
+        if not ($key | path exists) { mv $pending_key $key } else {
+            do --capture-errors { ^chmod 600 $key }
+        }
         mv $pending_config $config
     } catch {|err|
         rm --recursive --force $pending
@@ -130,7 +144,10 @@ def setup-linux-locked [identity_file: any] {
 
 # One-time enrollment; never replace an existing device identity.
 export def setup [--identity: path] {
-    if $nu.os-info.name == "linux" { setup-linux $identity; return }
+    if $nu.os-info.name == "linux" {
+        setup-linux $identity
+        return
+    }
     if $identity != null { error make {msg: "File identity import is Linux-only; native credential storage is unchanged."} }
     if $nu.os-info.name not-in ["windows" "macos"] {
         error make {msg: "Secrets setup currently supports Windows and macOS only."}
@@ -228,7 +245,9 @@ export def refresh [] {
     let pending = $staging | path join "config.toml"
     mkdir $staging
     try {
-        if $nu.os-info.name == "linux" { do --capture-errors { ^chmod 700 $staging } }
+        if $nu.os-info.name == "linux" {
+            do --capture-errors { ^chmod 700 $staging }
+        }
         cp $config $pending
         if ($names | is-not-empty) {
             let result = (with-env {FNOX_CONFIG_DIR: $staging} {
@@ -258,7 +277,9 @@ export def refresh [] {
             )
         }
         $updated | update secrets ($cache | reject ...$removed) | to toml | save --force $pending
-        if $nu.os-info.name == "linux" { do --capture-errors { ^chmod 600 $pending } }
+        if $nu.os-info.name == "linux" {
+            do --capture-errors { ^chmod 600 $pending }
+        }
         mv --force $pending $config
     } catch {|err|
         rm --recursive --force $staging

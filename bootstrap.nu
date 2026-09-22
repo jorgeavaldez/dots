@@ -201,7 +201,10 @@ def main [
         } else {
             $dots | path join "yazi" $file
         }
-        $links = ($links | append {source: $source, destination: ($yazi_dir | path join $file)})
+        $links = (
+            $links
+            | append {source: $source, destination: ($yazi_dir | path join $file)}
+        )
     }
     let vicinae_dir = $config_home | path join "vicinae"
     let vicinae_settings = $vicinae_dir | path join "settings.json"

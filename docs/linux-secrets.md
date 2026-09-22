@@ -76,12 +76,53 @@ on it. Do not forward or copy a new device's private key just to refresh it.
 
 ## Optional desktop source refresh
 
-On a Linux desktop with the 1Password CLI installed and authenticated, edit the
-private `sources.toml` template and run:
+On a Linux desktop with the 1Password CLI installed and authenticated:
 
-```nu
-secrets refresh
-```
+1. In Nu, create the template if needed and open the **device-local** file in
+   Neovim. This respects `FNOX_CONFIG_DIR`; replace `nvim` with your editor if
+   needed. `secrets init` does not overwrite an existing file.
+
+   ```nu
+   secrets init
+   let sources = ($env.FNOX_CONFIG_DIR? | default ($nu.home-dir | path join ".config" "fnox") | path join "sources.toml")
+   ^nvim $sources
+   ```
+
+2. Keep the `[providers.onepassword]` section. Under the existing `[secrets]`
+   section, uncomment or add one entry per environment variable. For example:
+
+   ```toml
+   [providers.onepassword]
+   type = "1password"
+
+   [secrets]
+   OPENAI_API_KEY = { provider = "onepassword", value = "op://Vault/Item/credential" }
+   ```
+
+   Replace `op://Vault/Item/credential` with that field's **secret reference**, not
+   its actual value. You can copy the reference from the 1Password desktop app;
+   see [1Password's secret reference guide](https://developer.1password.com/docs/cli/secret-references/).
+   The variable name on the left is what child processes receive. Add entries to
+   the existing `[secrets]` table rather than creating a duplicate table. Keep all
+   intended refresh-managed keys in this file: refresh removes cached `dots-age`
+   keys absent from it. Never edit the generated `config.toml` to add references.
+
+3. Save and quit Neovim (`Esc`, then `:wq`, then Enter). Back in Nu, validate the
+   TOML without displaying its contents, then refresh the encrypted cache:
+
+   ```nu
+   open $sources | ignore
+   secrets refresh
+   ```
+
+   If TOML validation reports an error, fix it before running refresh. A failed
+   refresh leaves the existing encrypted cache intact. The native hook picks up
+   a successful refresh at the next prompt; check presence without printing the
+   secret:
+
+   ```nu
+   $env.OPENAI_API_KEY? != null
+   ```
 
 Refresh resolves sources and stages a replacement encrypted global cache; failed
 source access leaves the live cache intact. Other fnox source providers can also
@@ -101,10 +142,12 @@ no-`op` device, or maintain the complete source map for a refresh-managed device
 ## Isolated integration tests
 
 ```sh
-NU_BIN=/absolute/path/to/nu \
-FNOX_BIN=/absolute/path/to/fnox \
-AGE_KEYGEN_BIN=/absolute/path/to/age-keygen \
-python3 -m unittest discover -s tests -p test_linux_secrets.py -v
+export NU_BIN=/absolute/path/to/nu
+export FNOX_BIN=/absolute/path/to/fnox
+export AGE_KEYGEN_BIN=/absolute/path/to/age-keygen
+export ZOXIDE_BIN=/absolute/path/to/zoxide
+export TMPDIR=/existing/scratch/directory
+"$NU_BIN" --no-config-file tests/run.nu
 ```
 
 Tests use real tools and disposable homes/configuration, synthetic values only,
@@ -112,6 +155,7 @@ and a narrow test-only `mise which` resolver. Their PATH excludes host mise
 shims and puts a failing, invocation-recording `op` sentinel before host binaries;
 offline enrollment, reads, injection, and the native hook assert it is never called.
 Tests cover permission failures, concurrent enrollment, and recipient mismatch.
-They never enroll the host or use its credentials. Python 3.11+ is
-required. If tools are absent the tests explicitly skip; a skipped run does not
-verify integration. Linux tests do not exercise native Windows/macOS keychains.
+They never enroll the host or use its credentials. Nu and its bundled
+`std/assert` run the suite; Python is not required. Missing tools fail explicitly.
+See [the Nu test guide](test-nushell.md) for required tools and isolation details.
+Linux tests do not exercise native Windows/macOS keychains.

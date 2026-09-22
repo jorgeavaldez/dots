@@ -351,13 +351,15 @@ Back up `~/.local/share/jj-android` with the rest of the Termux home. If that pr
 
 ## shell formatting
 
-Shell files are formatted with `shfmt` (installed via `mise`).
+Shell files use `shfmt`; Nushell files use `nufmt` (both declared in mise).
+`make lint` also runs Nu's native `nu-check --debug` parser check. This checks
+syntax and parse-time imports, not a separate semantic/style linter.
 
 ```bash
 make format
 ```
 
-Check formatting without modifying files:
+Check formatting and Nu syntax without modifying tracked files:
 
 ```bash
 make lint
@@ -370,3 +372,10 @@ See which files are included:
 ```bash
 make shell-files
 ```
+
+Nu files are discovered automatically through Git, including new non-ignored
+`*.nu` files. Checks run with a disposable HOME/XDG and generated mise/zoxide
+imports; they do not execute bootstrap, startup configs, or secrets hooks.
+This isolates the environment, not filesystem access: only check trusted code.
+The lint targets expect `nu`, `mise`, `zoxide`, `shfmt`, and `nufmt` on PATH.
+CI pins the nufmt source revision because upstream has no published release.
