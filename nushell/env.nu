@@ -3,10 +3,14 @@ $env.PAGER = "ov -F"
 if $env.EDITOR? == null { $env.EDITOR = "nvim" }
 if $env.VISUAL? == null { $env.VISUAL = $env.EDITOR }
 
-if $nu.os-info.name == "macos" {
-
+# Use the installed mise and user commands without changing device SSH settings.
+if $nu.os-info.name in ["linux" "macos"] {
     # tmux and Zellij use SHELL for new panes; leave the login shell unchanged.
     $env.SHELL = $nu.current-exe
+    $env.PATH = ($env.PATH | prepend ($nu.home-dir | path join ".local" "bin") | uniq)
+}
+
+if $nu.os-info.name == "macos" {
     $env.GOPATH = ($nu.home-dir | path join "proj" "go")
     $env.FLYCTL_INSTALL = ($nu.home-dir | path join ".fly")
     let paths = [
@@ -29,7 +33,7 @@ $env.MISE_ACTIVATE_AGGRESSIVE = "true"
 mkdir $nu.cache-dir
 ^mise activate nu | save --force ($nu.cache-dir | path join "mise.nu")
 
-# Use the same device config on Windows and macOS; preserve explicit overrides.
+# Use the same device config on every platform; preserve explicit overrides.
 $env.FNOX_CONFIG_DIR = ($env.FNOX_CONFIG_DIR? | default ($nu.home-dir | path join ".config" "fnox"))
 # Hide secret-name notices, not resolution errors.
 $env.FNOX_SHELL_OUTPUT = "none"

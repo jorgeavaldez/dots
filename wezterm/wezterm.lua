@@ -14,6 +14,13 @@ elseif wezterm.target_triple:find("apple") then
 	config.set_environment_variables.PATH = "/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/local/sbin:"
 		.. os.getenv("PATH")
 	config.default_prog = { "nu" }
+else
+	-- Desktop launches need mise shims before Nu can activate mise itself.
+	local home = os.getenv("HOME")
+	local mise_data = os.getenv("MISE_DATA_DIR")
+		or ((os.getenv("XDG_DATA_HOME") or (home .. "/.local/share")) .. "/mise")
+	config.set_environment_variables.PATH = home .. "/.local/bin:" .. mise_data .. "/shims:" .. os.getenv("PATH")
+	config.default_prog = { "nu" }
 end
 
 local is_dark = appearance.is_dark()

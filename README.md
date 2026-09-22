@@ -2,7 +2,7 @@
 
 my dotfiles
 
-## Nushell bootstrap (Windows and macOS)
+## Nushell bootstrap (Windows, macOS, and Linux)
 
 Start with a copy of this repository and:
 
@@ -12,6 +12,9 @@ Start with a copy of this repository and:
   does not change Windows security settings. Package installers may show UAC.
 - **macOS:** Nushell and Homebrew installed. If Apple's Command Line Tools are
   missing, finish the prompted installation and rerun the bootstrap.
+- **Linux (Arch or Debian):** mise, Nushell, Git, and system/build prerequisites
+  are already installed and on PATH. Bootstrap does not detect or invoke apt,
+  pacman, Homebrew, or a prerequisite installer on Linux.
 
 Run from the checkout (it does not have to be `~/dots`):
 
@@ -20,7 +23,7 @@ nu --no-config-file bootstrap.nu --dry-run
 nu --no-config-file bootstrap.nu
 ```
 
-The Nu installer installs mise if missing, connects the shared mise config,
+On Windows/macOS, the Nu installer installs mise if missing, connects the shared mise config,
 uses its `[bootstrap.packages]` to install missing WinGet/Homebrew packages,
 ensures compiler prerequisites, then installs missing `[tools]` with mise.
 `mise/config.toml` is the only package/tool list. WinGet is preferred for Windows
@@ -31,7 +34,13 @@ stops setup with instructions to rerun afterward. On Intel Macs, bootstrap appli
 those same package declarations through the installed Homebrew CLI because mise's
 native Homebrew manager supports only Apple Silicon on macOS.
 
-Use **this Nu entrypoint** for full machine setup. `mise install` alone does not
+On Linux, it connects that same mise config and runs `mise install --yes`
+without a system-package step. Nu itself is now mise-managed too.
+The 1Password CLI remains optional on Linux; fnox and age are installed by mise.
+On desktops that use 1Password, keep the existing CLI/SSH-agent installation.
+No SSH configuration, identity, agent socket, or login shell is changed.
+
+Use **this Nu entrypoint** for the Nu migration. `mise install` alone does not
 install system packages or configure compiler workloads. Bootstrap doesn't
 force upgrades of already-installed system applications.
 
@@ -41,11 +50,14 @@ force upgrades of already-installed system applications.
 | --- | --- |
 | `mise/config.toml` | `~/.config/mise/config.toml` by default |
 | `nushell/env.nu`, `nushell/config.nu` | Nu's own startup paths |
-| `wezterm/` | `~/.config/wezterm` (respects XDG on macOS) |
+| `wezterm/` | `~/.config/wezterm` (respects XDG on macOS/Linux) |
 | `jj/config.toml` | jj's user config path; `%APPDATA%/jj/config.toml` on fresh Windows |
-| `herdr/config.toml` | `%APPDATA%/herdr/config.toml` on Windows; `~/.config/herdr/config.toml` on macOS |
+| `herdr/config.toml` | `%APPDATA%/herdr/config.toml` on Windows; `~/.config/herdr/config.toml` on macOS/Linux |
 | `git/config`, `git/ignore` | `~/.gitconfig`, `~/.gitignore` |
-| `.tmux.conf`, `zellij/config.kdl` | `~/.tmux.conf`, `~/.config/zellij/config.kdl` on macOS only |
+| `.tmux.conf`, `.vimrc`, `zellij/config.kdl` | Home dotfiles and XDG Zellij config on macOS/Linux |
+| `starship.toml` | `$STARSHIP_CONFIG` or `~/.config/starship.toml` (config only, no prompt activation) |
+| `yazi/*.toml` | Yazi config directory; existing plugins/flavors stay local, macOS keymap selected on macOS |
+| `vicinae/` | `~/.config/vicinae/dots` on macOS/Linux, with local imported settings preserved |
 
 Nu supplies its startup paths; the bootstrap respects its config-home override
 and mise's `MISE_GLOBAL_CONFIG_FILE`, `MISE_CONFIG_DIR`, and `XDG_CONFIG_HOME`.
@@ -61,17 +73,20 @@ rather than guessing how to merge them. `core.excludesfile = ~/.gitignore` uses
 Git's home expansion on both platforms; `git/ignore` starts empty. Existing global
 ignore contents are backed up for review, not silently copied into the repo.
 
-The macOS bootstrap also installs WezTerm terminfo into `~/.terminfo`. WezTerm
-starts Nu on both platforms; macOS Nu sets `SHELL` for tmux/Zellij child panes.
+The macOS/Linux bootstrap also installs WezTerm terminfo into `~/.terminfo`. WezTerm
+starts Nu on all supported platforms; macOS/Linux Nu sets `SHELL` for tmux/Zellij child panes.
 The system login shell and all Zsh startup files are unchanged. WezTerm already
 bundles the configured JetBrains Mono font.
+
+See [Linux bootstrap details and tests](docs/bootstrap-linux.md) for Arch/Debian.
 
 ### Interactive Nu
 
 - Vi editing, mise/zoxide, and Carapace external completions. Completion bridges
   to Bash/Zsh/Fish are disabled; aliases such as `j` and `dco` keep their expansion.
-- `pbcopy` / `pbpaste` use the native macOS or Windows clipboard, preserving UTF-8
-  text without adding a newline.
+- `pbcopy` / `pbpaste` use the native macOS/Windows clipboard, `wl-copy`/`wl-paste`
+  on Wayland, or `xclip` on X11, preserving UTF-8 text and trailing newlines.
+  Linux clipboard tools are assumed installed; headless SSH sessions need none.
 - `commit` accepts a message argument or piped text; no input opens jj's editor.
   `bump` moves the current bookmark to `@-` and refuses ambiguous/absent bookmarks.
 - `dco` aliases `docker compose`; Docker itself is not installed.
@@ -87,12 +102,20 @@ zoxide upgrade. Mise's session-dependent integration is regenerated at startup.
 Neovim and its config are **entirely separate**, including Windows config links.
 The jj diff/merge editor expects the custom Neovim commands already installed
 there. This bootstrap does not install Docker/Postgres, enroll secrets or
-configure SSH authentication, migrate Yazi, or configure macOS desktop applications.
-Linux and Termux remain on the existing installers below for now.
+configure SSH authentication, install Yazi plugins/flavors, or configure desktop
+permissions/shortcuts. Existing config links are covered below. Termux remains
+on `install.android.sh` and `pkg`; its Nu migration is separate. The Nu bootstrap
+rejects Termux rather than attempting to run mise there.
 
-### Automatic secrets (Windows and macOS)
+### Automatic secrets
 
-Bootstrap installs fnox, age, and the 1Password CLI. After opening a new Nu session,
+Linux uses a private file-backed age identity, with no keyring or `op` dependency
+for local encrypted secrets. See [Linux secrets setup](docs/linux-secrets.md)
+for enrollment and provisioning devices that do not run 1Password. SSH auth is
+independent: Nu preserves the inherited agent, and regular OpenSSH continues to
+use device-local keys/config. It does not start keychain or replace your agent.
+
+On Windows/macOS, bootstrap installs fnox, age, and the 1Password CLI. After opening a new Nu session,
 run the one-time device setup:
 
 ```nu
@@ -195,7 +218,7 @@ empty template is shared. If moving from the old repository-local
 shell; that old repository path is now ignored. Do not share device identities
 or encrypted caches. For each project on the new device, check out its references
 and run the project sync command to build that device's local cache. The old Zsh
-setup and Linux/Termux integration are unchanged.
+setup and Termux integration are unchanged.
 
 ### macOS setup and smoke test
 
@@ -257,7 +280,10 @@ If a check fails, keep the failing command and complete error output, and note
 whether the Mac is Intel or Apple Silicon. Passing checks on Windows does not
 replace this macOS smoke test.
 
-## install
+## Legacy Zsh installer
+
+For Linux/macOS Nu setup, use `bootstrap.nu` above, not this legacy entrypoint.
+
 
 ```bash
 git clone git@github.com:jorgeavaldez/dots.git ~/dots/
