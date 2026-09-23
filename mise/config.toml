@@ -1,4 +1,5 @@
 [tools]
+nu = "latest"
 deno = "latest"
 elixir = "latest"
 erlang = "latest"
@@ -30,7 +31,8 @@ ripgrep = "latest"
 carapace = "latest"
 jj = "latest"
 "cargo:jj-starship" = "latest"
-1password-cli = "latest"
+# Optional on Linux: age-only devices do not need the 1Password CLI.
+1password-cli = { version = "latest", os = ["windows", "macos"] }
 zig = "latest"
 zls = "latest"
 zoxide = "latest"
@@ -73,7 +75,7 @@ zellij = "latest"
 zmx = "latest"
 "github:vercel-labs/fx" = { version = "latest", os = ["linux", "macos"] }
 age = "latest"
-fnox = { version = "latest", os = ["windows", "macos"] }
+fnox = "latest"
 "github:vercel-labs/agent-browser" = "latest"
 bat = "latest"
 "github:noborus/ov" = "latest"
@@ -113,3 +115,7 @@ uv_venv_auto = "source"
 
 [settings.pipx]
 uvx = true
+
+[settings.github]
+use_git_credentials = true
+credential_command = "gh auth token"

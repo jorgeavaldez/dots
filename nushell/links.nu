@@ -1,7 +1,7 @@
 # Source first, destination second. Windows directories use junctions.
 export def symlink [source: path, destination: path] {
-    let source = ($source | path expand --strict)
-    let destination = ($destination | path expand --no-symlink)
+    let source = $source | path expand --strict
+    let destination = $destination | path expand --no-symlink
     if $nu.os-info.name == "windows" {
         let flags = if ($source | path type) == "dir" { ["/J"] } else { [] }
         # Delayed expansion keeps %, !, and CMD metacharacters in paths literal.

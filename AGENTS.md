@@ -38,3 +38,19 @@ Shell files are discovered automatically by `scripts/list_shell_files.sh` and in
 - extensionless shell scripts in `scripts/` (detected by shebang)
 
 Do not manually maintain a file list for formatting; use the Makefile targets.
+
+Nushell files (`*.nu`, including `tests/`) are discovered from tracked and
+non-ignored untracked files by `scripts/nu-lint.nu`. `make format` runs `nufmt`
+in place; `make lint` runs `nufmt --dry-run` and Nu's native `nu-check --debug`.
+The latter is parser/syntax checking, not a separate style or semantic linter.
+Have `shfmt`, `nufmt`, `nu`, `mise`, and `zoxide` on PATH before running these
+commands. CI pins nufmt's source commit in `.github/workflows/linux.yml`; use
+that revision when reproducing CI formatting (there are no upstream releases).
+
+Nu resolves `use`/`source` during parsing, even inside runtime conditionals.
+The check generates real mise/zoxide integrations under temporary HOME/XDG
+paths with a cleared environment, without running the repository's startup
+files, bootstrap, fnox hooks, or secret resolution. Do not replace this with
+executing each `.nu` file or reading the developer's generated startup files.
+Parser checks do not prove runtime behavior or validate other operating systems;
+keep isolated integration tests for that coverage.

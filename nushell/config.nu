@@ -1,4 +1,4 @@
-# Shared interactive config for Windows and macOS.
+# Shared interactive config for Windows, macOS, and Linux.
 $env.config.show_banner = false
 $env.config.edit_mode = "vi"
 
@@ -101,7 +101,16 @@ def pbcopy []: string -> nothing {
                 }
             '
         }
-        _ => { error make {msg: "Clipboard integration is configured for Windows and macOS only."} }
+        "linux" => {
+            if ($env.WAYLAND_DISPLAY? | default "") != "" {
+                $text | ^wl-copy
+            } else if ($env.DISPLAY? | default "") != "" {
+                $text | ^xclip -selection clipboard -in
+            } else {
+                error make {msg: "Clipboard requires a Wayland or X11 display; this session is headless."}
+            }
+        }
+        _ => { error make {msg: "Clipboard integration is not configured for this platform."} }
     }
 }
 
@@ -119,7 +128,16 @@ def pbpaste []: nothing -> string {
                 [Console]::Out.Write((Get-Clipboard -Raw))
             ' | complete
         }
-        _ => { error make {msg: "Clipboard integration is configured for Windows and macOS only."} }
+        "linux" => {
+            if ($env.WAYLAND_DISPLAY? | default "") != "" {
+                ^wl-paste --no-newline | complete
+            } else if ($env.DISPLAY? | default "") != "" {
+                ^xclip -selection clipboard -out | complete
+            } else {
+                error make {msg: "Clipboard requires a Wayland or X11 display; this session is headless."}
+            }
+        }
+        _ => { error make {msg: "Clipboard integration is not configured for this platform."} }
     }
     if $result.exit_code != 0 {
         error make {

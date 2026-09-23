@@ -1,5 +1,6 @@
 # Run with: nu --no-config-file bootstrap.nu [--dry-run]
 # Windows seed: Nushell + WinGet. macOS seed: Nushell + Homebrew.
+# Linux (Arch/Debian): mise, Nushell and system prerequisites already installed.
 const dots = path self | path dirname
 use nushell/links.nu symlink
 use nushell/secrets.nu
@@ -15,7 +16,7 @@ def --env refresh-system-path [] {
         ' | complete)
         if $result.exit_code != 0 { error make {msg: "Could not read the installed Windows PATH."} }
         $result.stdout | str trim | split row ";" | where {|entry| $entry != ""}
-    } else {
+    } else if $nu.os-info.name == "macos" {
         [
             "/opt/homebrew/bin"
             "/opt/homebrew/sbin"
@@ -23,6 +24,8 @@ def --env refresh-system-path [] {
             "/usr/local/sbin"
         ]
         | where {|entry| $entry | path exists}
+    } else {
+        []
     }
     $env.PATH = ($env.PATH | append $paths | uniq)
 }
@@ -104,6 +107,9 @@ def ensure-compiler-prerequisites [] {
 def main [
     --dry-run # Show actions without installing packages or changing files.
 ] {
+    if ($env.TERMUX_VERSION? | default "" | is-not-empty) or ($env.PREFIX? | default "" | str contains "com.termux") or $nu.os-info.name == "android" {
+        error make {msg: "Termux is not supported by bootstrap.nu; use install.android.sh."}
+    }
     let home = $nu.home-dir
     let config_home = $env.XDG_CONFIG_HOME? | default ($home | path join ".config")
     let platform = match $nu.os-info.name {
@@ -111,17 +117,18 @@ def main [
             wezterm: ($home | path join ".config" "wezterm")
             jj: ($env.APPDATA | path join "jj" "config.toml")
             herdr: ($env.APPDATA | path join "herdr" "config.toml")
+            yazi: ($env.APPDATA | path join "yazi" "config")
         }
-        macos => {
+        macos | linux => {
             wezterm: ($config_home | path join "wezterm")
             jj: ($config_home | path join "jj" "config.toml")
             herdr: ($config_home | path join "herdr" "config.toml")
+            yazi: ($config_home | path join "yazi")
         }
-        _ => { error make {msg: "Windows/macOS only. Linux and Termux still use their existing installers."} }
+        _ => { error make {msg: "This bootstrap supports Windows, macOS and Linux."} }
     }
     refresh-system-path
     let manager = if $nu.os-info.name == "windows" { "winget" } else { "brew" }
-    if (which $manager | is-empty) { error make {msg: $"Install ($manager) before running bootstrap.nu."} }
 
     let mise_dir = $env.MISE_CONFIG_DIR? | default ($config_home | path join "mise")
     let mise_config = (
@@ -183,8 +190,28 @@ def main [
             destination: ($home | path join ".gitignore")
         }
     ]
-    if $nu.os-info.name == "macos" {
+    $links = ($links | append {
+        source: ($dots | path join "starship.toml")
+        destination: ($env.STARSHIP_CONFIG? | default ($config_home | path join "starship.toml"))
+    })
+    let yazi_dir = $env.YAZI_CONFIG_HOME? | default $platform.yazi
+    for file in ["yazi.toml" "theme.toml" "package.toml" "keymap.toml"] {
+        let source = if $file == "keymap.toml" and $nu.os-info.name == "macos" {
+            $dots | path join "yazi" "macos" $file
+        } else {
+            $dots | path join "yazi" $file
+        }
+        $links = (
+            $links
+            | append {source: $source, destination: ($yazi_dir | path join $file)}
+        )
+    }
+    let vicinae_dir = $config_home | path join "vicinae"
+    let vicinae_settings = $vicinae_dir | path join "settings.json"
+    if $nu.os-info.name in ["macos" "linux"] {
         $links = ($links | append [
+            {source: ($dots | path join ".vimrc"), destination: ($home | path join ".vimrc")}
+            {source: ($dots | path join "vicinae"), destination: ($vicinae_dir | path join "dots")}
             {source: ($dots | path join ".tmux.conf"), destination: ($home | path join ".tmux.conf")}
             {source: ($dots | path join "zellij" "config.kdl"), destination: ($config_home | path join "zellij" "config.kdl")}
         ])
@@ -216,7 +243,11 @@ def main [
         }
         print $"Will link: ($link.destination) -> ($link.source)"
     }
-    print $"Will ensure mise is installed through ($manager)."
+    if $nu.os-info.name == "linux" {
+        print "Linux prerequisites are assumed installed (including mise, Nu and build tools)."
+    } else {
+        print $"Will ensure mise is installed through ($manager)."
+    }
     let packages = (
         open ($dots | path join "mise" "config.toml")
         | get bootstrap.packages
@@ -224,11 +255,22 @@ def main [
         | where options.os == $nu.os-info.name
         | get name
     )
-    print $"Will apply system packages: ($packages | str join ', ')"
-    print "Will ensure compiler prerequisites, then install missing mise tools."
+    if $nu.os-info.name != "linux" {
+        print $"Will apply system packages: ($packages | str join ', ')"
+        print "Will ensure compiler prerequisites, then install missing mise tools."
+    } else {
+        print "Will install missing mise tools; no Linux system package installation."
+    }
+    if $nu.os-info.name in ["macos" "linux"] {
+        if ($vicinae_settings | path type) == null {
+            print $"Will create local Vicinae settings importing tracked defaults: ($vicinae_settings)"
+        } else {
+            print $"Vicinae: preserving ($vicinae_settings). Ensure imports includes dots/settings.json; also dots/macos.json on macOS."
+        }
+    }
     print $"Will generate zoxide integration: ($zoxide_init)"
     print "Will install native fnox integration through secrets setup-shell (no credential enrollment)."
-    if $nu.os-info.name == "macos" { print "Will install WezTerm terminfo into ~/.terminfo." }
+    if $nu.os-info.name in ["macos" "linux"] { print "Will install WezTerm terminfo into ~/.terminfo." }
     if $dry_run { return }
 
     if $nu.os-info.name == "windows" {
@@ -238,7 +280,7 @@ def main [
         symlink ($dots | path join "git" "ignore") $probe
         rm $probe
     }
-    if (which mise | is-empty) {
+    if $nu.os-info.name != "linux" and (which mise | is-empty) {
         if $nu.os-info.name == "windows" {
             do --capture-errors { ^winget install --id jdx.mise --exact --source winget --silent --accept-package-agreements --accept-source-agreements --disable-interactivity }
         } else {
@@ -270,11 +312,11 @@ def main [
                 do --capture-errors { ^brew install $"--($kind)" ...$missing }
             }
         }
-    } else {
+    } else if $nu.os-info.name != "linux" {
         do --capture-errors { ^mise --cd $dots bootstrap --only packages --yes }
     }
     refresh-system-path
-    ensure-compiler-prerequisites
+    if $nu.os-info.name != "linux" { ensure-compiler-prerequisites }
     do --capture-errors { ^mise --cd $dots install --yes }
 
     let zoxide = do --capture-errors { ^mise --cd $dots which zoxide } | str trim
@@ -286,7 +328,17 @@ def main [
         connect-config $link.source $link.destination $link.backup
     }
 
-    if $nu.os-info.name == "macos" {
+    # The GUI writes this file; only the defaults directory is linked to dots.
+    if $nu.os-info.name in ["macos" "linux"] and ($vicinae_settings | path type) == null {
+        let imports = if $nu.os-info.name == "macos" {
+            ["dots/settings.json" "dots/macos.json"]
+        } else {
+            ["dots/settings.json"]
+        }
+        {imports: $imports} | to json | save $vicinae_settings
+    }
+
+    if $nu.os-info.name in ["macos" "linux"] {
         let terminfo = (mktemp --suffix .terminfo)
         try {
             http get --raw https://raw.githubusercontent.com/wezterm/wezterm/main/termwiz/data/wezterm.terminfo | save --force $terminfo

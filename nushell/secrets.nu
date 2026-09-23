@@ -24,6 +24,9 @@ export def init [] {
     let sources = (sources-path)
     if not ($sources | path exists) {
         mkdir ($sources | path dirname)
+        if $nu.os-info.name == "linux" {
+            do --capture-errors { ^chmod 700 ($sources | path dirname) }
+        }
         '# Private 1Password references. Keep this file outside dots.
 [providers.onepassword]
 type = "1password"
@@ -31,6 +34,9 @@ type = "1password"
 [secrets]
 # OPENAI_API_KEY = { provider = "onepassword", value = "op://Vault/Item/credential" }
 ' | save $sources
+        if $nu.os-info.name == "linux" {
+            do --capture-errors { ^chmod 600 $sources }
+        }
         print $"Created empty secrets template: ($sources)"
     } else {
         print $"Existing secrets references preserved: ($sources)"
@@ -47,8 +53,102 @@ export def setup-shell [] {
     print $"Installed native fnox integration: ($target). Open a new Nu shell to use it."
 }
 
+# Linux uses a private file, not a desktop keychain or an SSH agent.
+def setup-linux [identity_file] {
+    let directory = config-path | path dirname
+    mkdir $directory
+    do --capture-errors { ^chmod 700 $directory }
+    let lock = $directory | path join ".dots-setup.lock"
+    # External mkdir (no -p) is atomic; a contender must never remove this lock.
+    let acquired = (^mkdir --mode=700 -- $lock | complete)
+    if $acquired.exit_code != 0 {
+        error make {msg: $"Could not acquire enrollment lock ($lock). Another setup may be running; retry after it finishes."}
+    }
+    try {
+        setup-linux-locked $identity_file
+    } catch {|err|
+        do --capture-errors { ^rmdir -- $lock }
+        error make {msg: $err.msg}
+    }
+    do --capture-errors { ^rmdir -- $lock }
+}
+
+# All existing-config and orphan-identity checks run while holding the lock.
+def setup-linux-locked [identity_file] {
+    let config = (config-path)
+    let key = $config | path dirname | path join "age.txt"
+    let age_keygen = (installed-tool age-keygen)
+    if ($config | path exists) {
+        if $identity_file != null { error make {msg: "Device already enrolled; importing would replace its identity."} }
+        let local = open $config
+        let existing = $local.providers.dots-age.key_file?
+        if $existing == null {
+            error make {msg: "Existing fnox config is not a dots file-identity config. It was not replaced."}
+        }
+        let checked = (^$age_keygen -y ($existing | path expand) | complete)
+        if $checked.exit_code != 0 {
+            error make {msg: "Existing device identity is unreadable. Identity and cache were not replaced."}
+        }
+        if ($checked.stdout | str trim) not-in $local.providers.dots-age.recipients {
+            error make {msg: "Existing identity does not match the configured recipient. Nothing was replaced."}
+        }
+        print "Secrets device already configured; identity and cache preserved."
+        return
+    }
+    if ($key | path exists) and ($identity_file == null or ($identity_file | path expand) != $key) {
+        error make {msg: "An age identity already exists without a config. Import it explicitly; it was not replaced."}
+    }
+    mkdir ($config | path dirname)
+    do --capture-errors { ^chmod 700 ($config | path dirname) }
+    let pending = $config | path dirname | path join $".dots-enroll-(random uuid)"
+    mkdir $pending
+    try {
+        do --capture-errors { ^chmod 700 $pending }
+        let pending_key = $pending | path join "age.txt"
+        if $identity_file == null {
+            let generated = (^$age_keygen -o $pending_key | complete)
+            if $generated.exit_code != 0 { error make {msg: "Could not generate the device age identity."} }
+        } else {
+            cp ($identity_file | path expand) $pending_key
+        }
+        do --capture-errors { ^chmod 600 $pending_key }
+        let recipient = (^$age_keygen -y $pending_key | complete)
+        if $recipient.exit_code != 0 { error make {msg: "Could not derive the device age recipient."} }
+        let settings = {
+            providers: {
+                dots-age: {
+                    type: "age"
+                    recipients: [
+                        ($recipient.stdout | str trim)
+                    ]
+                    key_file: $key
+                }
+            }
+            secrets: {}
+        }
+        let pending_config = $pending | path join "config.toml"
+        $settings | to toml | save $pending_config
+        do --capture-errors { ^chmod 600 $pending_config }
+        if not ($key | path exists) { mv $pending_key $key } else {
+            do --capture-errors { ^chmod 600 $key }
+        }
+        mv $pending_config $config
+    } catch {|err|
+        rm --recursive --force $pending
+        error make {msg: $err.msg}
+    }
+    rm --recursive --force $pending
+    init
+    print "Secrets device configured with a private age file. Use fnox set --global --provider dots-age, or configure sources and refresh."
+}
+
 # One-time enrollment; never replace an existing device identity.
-export def setup [] {
+export def setup [--identity: path] {
+    if $nu.os-info.name == "linux" {
+        setup-linux $identity
+        return
+    }
+    if $identity != null { error make {msg: "File identity import is Linux-only; native credential storage is unchanged."} }
     if $nu.os-info.name not-in ["windows" "macos"] {
         error make {msg: "Secrets setup currently supports Windows and macOS only."}
     }
@@ -117,8 +217,8 @@ export def setup [] {
 
 # Refresh the global cache; the native hook reloads it at the next prompt.
 export def refresh [] {
-    if $nu.os-info.name not-in ["windows" "macos"] {
-        error make {msg: "Secrets refresh currently supports Windows and macOS only."}
+    if $nu.os-info.name not-in ["windows" "macos" "linux"] {
+        error make {msg: "Secrets refresh supports Windows, macOS, and Linux."}
     }
 
     let config = (config-path)
@@ -144,15 +244,17 @@ export def refresh [] {
     let staging = $config | path dirname | path join $".dots-refresh-(random uuid)"
     let pending = $staging | path join "config.toml"
     mkdir $staging
-    cp $config $pending
-
     try {
+        if $nu.os-info.name == "linux" {
+            do --capture-errors { ^chmod 700 $staging }
+        }
+        cp $config $pending
         if ($names | is-not-empty) {
             let result = (with-env {FNOX_CONFIG_DIR: $staging} {
                 ^$fnox --config $sources --profile default --no-daemon --if-missing error sync --global --provider dots-age --force ...$names | complete
             })
             if $result.exit_code != 0 {
-                error make {msg: $"Secrets refresh failed (fnox exit ($result.exit_code)). Check 1Password CLI sign-in and the references in ($sources). The previous cache and shell environment were preserved."}
+                error make {msg: $"Secrets refresh failed (fnox exit ($result.exit_code)). Check source-provider access and the references in ($sources). 1Password references require an installed, authenticated op CLI. The previous cache and shell environment were preserved."}
             }
         }
         let updated = (open $pending)
@@ -175,6 +277,9 @@ export def refresh [] {
             )
         }
         $updated | update secrets ($cache | reject ...$removed) | to toml | save --force $pending
+        if $nu.os-info.name == "linux" {
+            do --capture-errors { ^chmod 600 $pending }
+        }
         mv --force $pending $config
     } catch {|err|
         rm --recursive --force $staging

@@ -5,3 +5,4 @@ secrets.sh
 .aider*
 mise/config.local.toml
 /fnox/sources.toml
+__pycache__/
