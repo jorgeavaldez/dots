@@ -40,7 +40,7 @@ Shell files are discovered automatically by `scripts/list_shell_files.sh` and in
 Do not manually maintain a file list for formatting; use the Makefile targets.
 
 Nushell files (`*.nu`, including `tests/`) are discovered from tracked and
-non-ignored untracked files by `scripts/nu-lint.sh`. `make format` runs `nufmt`
+non-ignored untracked files by `scripts/nu-lint.nu`. `make format` runs `nufmt`
 in place; `make lint` runs `nufmt --dry-run` and Nu's native `nu-check --debug`.
 The latter is parser/syntax checking, not a separate style or semantic linter.
 Have `shfmt`, `nufmt`, `nu`, `mise`, and `zoxide` on PATH before running these

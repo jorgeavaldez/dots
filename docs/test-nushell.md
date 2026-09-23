@@ -70,6 +70,26 @@ All executable stubs, including clipboard and paused age-keygen, use Nu. The
 clipboard stub reads `/dev/stdin` directly because script `main` does not receive
 stdin as `$in` unless Nu is launched with `--stdin`.
 
+## Nu lint tooling probe
+
+Run the separate Nu-only probe with `nu`, `mise`, `zoxide`, `nufmt`, Git, `env`,
+and `chmod`/`ln` available, and an existing `TMPDIR`:
+
+```nu
+nu --no-config-file tests/nu-lint.nu
+```
+
+It checks the real `scripts/nu-lint.nu` entry point: empty/non-repositories,
+explicit spaced filenames, NUL-separated tracked/untracked discovery (including
+newlines in filenames), ignored/deleted files, format/check and idempotence,
+malformed input, independent parser failure, and failing formatter/generators.
+Real mise/zoxide imports are generated outside the checkout. Nu wrappers verify
+cleared environment and isolated HOME/XDG; fault injection does not replace the
+real-tool success cases. Every invocation asserts sandbox cleanup. Checked
+scripts are deliberately runtime errors to prove lint does not execute them.
+The expected result is 10 passing probe groups, separately from the 29 runtime
+integration cases. This probe is not implicitly run by `make lint`.
+
 ## Failure handling
 
 The runner reports every case, removes each fixture in `finally`, and exits 1

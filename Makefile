@@ -22,7 +22,7 @@ format:
 		exit 0; \
 	fi; \
 	printf '%s\n' "$$files" | xargs shfmt -w $(SHFMT_FLAGS)
-	@bash ./scripts/nu-lint.sh format
+	@nu --no-config-file ./scripts/nu-lint.nu format
 	@echo "Formatting complete."
 
 lint:
@@ -33,7 +33,7 @@ lint:
 		exit 0; \
 	fi; \
 	printf '%s\n' "$$files" | xargs shfmt -d $(SHFMT_FLAGS)
-	@bash ./scripts/nu-lint.sh check
+	@nu --no-config-file ./scripts/nu-lint.nu check
 	@echo "Formatting and Nushell syntax checks complete."
 
 check: lint

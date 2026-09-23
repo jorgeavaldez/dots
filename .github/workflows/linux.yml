@@ -50,4 +50,8 @@ jobs:
           GIT_CONFIG_COUNT: "1"
           GIT_CONFIG_KEY_0: safe.directory
           GIT_CONFIG_VALUE_0: ${{ github.workspace }}
-        run: PATH="$RUNNER_TEMP/nufmt/bin:$PATH" mise exec nu@0.115.1 shfmt@3.14.1 zoxide@0.10.0 -- make lint
+        run: |
+          export PATH="$RUNNER_TEMP/nufmt/bin:$PATH"
+          export TMPDIR="$RUNNER_TEMP"
+          mise exec nu@0.115.1 shfmt@3.14.1 zoxide@0.10.0 -- make lint
+          mise exec nu@0.115.1 zoxide@0.10.0 -- nu --no-config-file tests/nu-lint.nu

@@ -373,8 +373,15 @@ See which files are included:
 make shell-files
 ```
 
-Nu files are discovered automatically through Git, including new non-ignored
-`*.nu` files. Checks run with a disposable HOME/XDG and generated mise/zoxide
+`scripts/nu-lint.nu` discovers Nu files automatically through Git, including new
+non-ignored `*.nu` files. To select specific paths, quote names with spaces:
+
+```nu
+nu --no-config-file scripts/nu-lint.nu check 'path with spaces.nu'
+nu --no-config-file scripts/nu-lint.nu format 'path with spaces.nu'
+```
+
+Checks run with a disposable HOME/XDG and generated mise/zoxide
 imports; they do not execute bootstrap, startup configs, or secrets hooks.
 This isolates the environment, not filesystem access: only check trusted code.
 The lint targets expect `nu`, `mise`, `zoxide`, `shfmt`, and `nufmt` on PATH.
