@@ -1,0 +1,11 @@
+KeyBind:
+  down:
+    - Enter
+    - Down
+    - ctrl+n
+    - j
+  up:
+    - Up
+    - ctrl+p
+    - k
+  jump_target: []

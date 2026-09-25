@@ -1,0 +1,57 @@
+name: Linux dotfiles
+
+on:
+  pull_request:
+  push:
+    branches: [main, nushell]
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: debian:bookworm
+            seed: apt-get update && apt-get install -y ca-certificates curl git build-essential xz-utils ncurses-bin
+          - image: archlinux:base-devel
+            seed: pacman -Syu --noconfirm --needed ca-certificates curl git base-devel xz ncurses
+    container: ${{ matrix.image }}
+    steps:
+      # Disposable CI images need provisioning. Bootstrap itself never does this.
+      - name: Seed test container
+        run: ${{ matrix.seed }}
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v3
+        with:
+          install: false
+          cache: false
+      - name: Install test and lint tools only
+        run: |
+          mise install nu@0.115.1 fnox@1.35.2 age@1.3.2 shfmt@3.14.1 zoxide@0.10.0 rust@1.95.0
+          # nufmt has no published releases: pin the upstream source revision.
+          mise exec rust@1.95.0 -- cargo install --locked --git https://github.com/nushell/nufmt --rev 24023665d1c2661addb22dce384b53d4a839727f --root "$RUNNER_TEMP/nufmt"
+      - name: Run isolated Linux tests
+        shell: bash
+        run: |
+          export NU_BIN="$(mise exec nu@0.115.1 -- which nu)"
+          export FNOX_BIN="$(mise exec fnox@1.35.2 -- which fnox)"
+          export ZOXIDE_BIN="$(mise exec zoxide@0.10.0 -- which zoxide)"
+          export AGE_KEYGEN_BIN="$(mise exec age@1.3.2 -- which age-keygen)"
+          export TMPDIR="$RUNNER_TEMP"
+          "$NU_BIN" --no-config-file tests/run.nu
+      - name: Check shell formatting and Nushell syntax
+        # Container UID differs from the host checkout owner. Trust only this
+        # workspace for this step; never write exceptions into shared dotfiles.
+        env:
+          GIT_CONFIG_COUNT: "1"
+          GIT_CONFIG_KEY_0: safe.directory
+          GIT_CONFIG_VALUE_0: ${{ github.workspace }}
+        run: |
+          export PATH="$RUNNER_TEMP/nufmt/bin:$PATH"
+          export TMPDIR="$RUNNER_TEMP"
+          mise exec nu@0.115.1 shfmt@3.14.1 zoxide@0.10.0 -- make lint
+          mise exec nu@0.115.1 zoxide@0.10.0 -- nu --no-config-file tests/nu-lint.nu

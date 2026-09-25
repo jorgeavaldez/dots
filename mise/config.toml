@@ -1,10 +1,11 @@
 [tools]
+nu = "latest"
 deno = "latest"
 elixir = "latest"
 erlang = "latest"
 go = "latest"
 java = "latest"
-lua = "latest"
+lua = { version = "latest", os = ["linux", "macos"] }
 node = "latest"
 # another npm client, mise uses it, jdx made it
 aube = "latest"
@@ -26,17 +27,23 @@ pitchfork = "latest"
 "aqua:cli/cli" = "2.87.3"
 "npm:prettier" = "latest"
 fd = "latest"
+ripgrep = "latest"
+carapace = "latest"
 jj = "latest"
 "cargo:jj-starship" = "latest"
-1password-cli = "latest"
+# Optional on Linux: age-only devices do not need the 1Password CLI.
+1password-cli = { version = "latest", os = ["windows", "macos"] }
 zig = "latest"
 zls = "latest"
+zoxide = "latest"
 "aqua:JohnnyMorganz/StyLua" = "latest"
 "pipx:pre-commit" = "latest"
 "cargo:qsv" = "latest"
+"cargo:https://github.com/nushell/nufmt" = "latest"
 claude-code = "latest"
 shfmt = "latest"
 cmake = "latest"
+"conda:make" = { version = "4.4.1", os = ["windows"] }
 shellcheck = "latest"
 delta = "latest"
 "npm:obsidian-headless" = "latest"
@@ -47,7 +54,10 @@ bun = "latest"
 "npm:hunkdiff" = "latest"
 actionlint = "latest"
 taplo = "latest"
-"npm:@tobilu/qmd" = { version = "latest", allow_builds = [
+"npm:@tobilu/qmd" = { version = "latest", os = [
+  "linux",
+  "macos",
+], allow_builds = [
   "better-sqlite3",
   "node-llama-cpp",
   "tree-sitter-go",
@@ -64,16 +74,51 @@ gcloud = "latest"
 grok = { version = "latest", bin = "grok", platforms = { windows-arm64 = { bin = "grok.exe", url = "https://storage.googleapis.com/grok-build-public-artifacts/cli/grok-{{ version }}-windows-aarch64.exe" }, windows-x64 = { bin = "grok.exe", url = "https://storage.googleapis.com/grok-build-public-artifacts/cli/grok-{{ version }}-windows-x86_64.exe" } }, url = 'https://storage.googleapis.com/grok-build-public-artifacts/cli/grok-{{ version }}-{{ os() }}-{{ arch(x64="x86_64", arm64="aarch64") }}', version_list_url = "https://x.ai/cli/stable" }
 zellij = "latest"
 zmx = "latest"
-"github:vercel-labs/fx" = "latest"
+"github:vercel-labs/fx" = { version = "latest", os = ["linux", "macos"] }
 age = "latest"
+fnox = "latest"
 "github:vercel-labs/agent-browser" = "latest"
+twg = { version = "latest", bin = "twg", checksum_url = "https://teamwork-graph.atlassian.com/cli/SHA256SUMS-v{{ version }}", platforms = { windows-arm64 = { bin = "twg.exe", url = "https://teamwork-graph.atlassian.com/cli/twg-windows-arm64-v{{ version }}.exe" }, windows-x64 = { bin = "twg.exe", url = "https://teamwork-graph.atlassian.com/cli/twg-windows-x64-v{{ version }}.exe" } }, url = 'https://teamwork-graph.atlassian.com/cli/twg-{{ os(macos="darwin") }}-{{ arch() }}-v{{ version }}', version_json_path = ".version", version_list_url = "https://teamwork-graph.atlassian.com/cli/manifest.json" }
+bat = "latest"
+"github:noborus/ov" = "latest"
+"aqua:LuaLS/lua-language-server" = "latest"
+
+# Windows binaries from LuaBinaries, linked by https://www.lua.org/download.html.
+# SHA-256 pins the trusted first download, not a signature from the Lua authors.
+# When changing versions, verify the new ZIP and update its checksum too.
+[tools."http:lua"]
+version = "5.5.0"
+os = ["windows/x64"]
+url = "https://downloads.sourceforge.net/project/luabinaries/{{ version }}/Tools%20Executables/lua-{{ version }}_Win64_bin.zip"
+checksum = "sha256:7825cb261d0dc61cb0e1511d451ceaf10bf72d2bba1855bfd3350add190e0024"
+rename_exe = { "lua[0-9]*.exe" = "lua.exe", "luac[0-9]*.exe" = "luac.exe", "wlua[0-9]*.exe" = "wlua.exe" }
+
+# System prerequisites/apps; development tools above remain mise-managed.
+# Git for Windows includes Git LFS. Neovim is managed separately.
+[bootstrap.packages]
+"winget:Git.Git" = { os = "windows" }
+"winget:wez.wezterm" = { os = "windows" }
+"winget:jftuga.less" = { os = "windows" }
+"winget:Microsoft.VisualStudio.BuildTools" = { os = "windows" }
+"brew:git" = { os = "macos" }
+"brew:git-lfs" = { os = "macos" }
+"brew:less" = { os = "macos" }
+"brew:autoconf" = { os = "macos" }
+"brew:openssl@3" = { os = "macos" }
+"brew:pkgconf" = { os = "macos" }
+"brew-cask:wezterm@nightly" = { os = "macos" }
 
 [settings]
 idiomatic_version_file_enable_tools = ["python"]
 experimental = true
+env_cache = true
 
 [settings.python]
 uv_venv_auto = "source"
 
 [settings.pipx]
 uvx = true
+
+[settings.github]
+use_git_credentials = true
+credential_command = "gh auth token"

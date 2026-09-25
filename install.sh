@@ -135,7 +135,6 @@ install_wezterm_terminfo() {
 }
 
 # Create parent directories if needed
-mkdir -p ~/.config/opencode
 mkdir -p ~/.config/jj
 mkdir -p ~/.config/herdr
 mkdir -p ~/.config/zellij
@@ -148,7 +147,6 @@ safe_link "$DOTS_DIR/.zshenv" ~/.zshenv
 safe_link "$DOTS_DIR/.zshrc" ~/.zshrc
 safe_link "$DOTS_DIR/.zprofile" ~/.zprofile
 safe_link "$DOTS_DIR/.tmux.conf" ~/.tmux.conf
-safe_link "$DOTS_DIR/opencode.json" ~/.config/opencode/opencode.json
 safe_link "$DOTS_DIR/starship.toml" ~/.config/starship.toml
 safe_link_dir "$DOTS_DIR/wezterm" ~/.config/wezterm
 safe_link_dir "$DOTS_DIR/mise" ~/.config/mise

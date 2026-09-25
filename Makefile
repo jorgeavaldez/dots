@@ -1,13 +1,17 @@
 .PHONY: help shell-files format lint check clean
 
+ifeq ($(OS),Windows_NT)
+SHELL := bash
+endif
+
 SHFMT_FLAGS := -i 4 -ci
 SHELL_FILES_CMD := ./scripts/list_shell_files.sh
 
 help:
 	@echo "Available commands:"
 	@echo "  shell-files  - Print discovered shell files"
-	@echo "  format       - Format discovered shell files with shfmt"
-	@echo "  lint         - Check formatting (shfmt diff)"
+	@echo "  format       - Format shell and Nushell files (shfmt, nufmt)"
+	@echo "  lint         - Check formatting and Nushell parser syntax"
 	@echo "  check        - Alias for lint"
 	@echo "  clean        - Remove temporary files"
 
@@ -22,6 +26,7 @@ format:
 		exit 0; \
 	fi; \
 	printf '%s\n' "$$files" | xargs shfmt -w $(SHFMT_FLAGS)
+	@nu --no-config-file ./scripts/nu-lint.nu format
 	@echo "Formatting complete."
 
 lint:
@@ -32,7 +37,8 @@ lint:
 		exit 0; \
 	fi; \
 	printf '%s\n' "$$files" | xargs shfmt -d $(SHFMT_FLAGS)
-	@echo "Formatting check complete."
+	@nu --no-config-file ./scripts/nu-lint.nu check
+	@echo "Formatting and Nushell syntax checks complete."
 
 check: lint
 
