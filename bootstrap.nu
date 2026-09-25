@@ -194,6 +194,13 @@ def main [
         source: ($dots | path join "starship.toml")
         destination: ($env.STARSHIP_CONFIG? | default ($config_home | path join "starship.toml"))
     })
+    let ov_config = $config_home | path join "ov" "config.yaml"
+    if ($ov_config | path type) == null {
+        $links = ($links | append {
+            source: ($dots | path join "ov" "config.yaml")
+            destination: $ov_config
+        })
+    }
     let yazi_dir = $env.YAZI_CONFIG_HOME? | default $platform.yazi
     for file in ["yazi.toml" "theme.toml" "package.toml" "keymap.toml"] {
         let source = if $file == "keymap.toml" and $nu.os-info.name == "macos" {

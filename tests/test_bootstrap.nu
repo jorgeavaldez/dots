@@ -85,6 +85,7 @@ export def cases [] {
                 let f = mock-mise-installs (bootstrap-fixture $fixture)
                 ok (bootstrap $f)
                 assert equal (($f.home | path join '.gitconfig') | path type) 'symlink'
+                link ($f.config | path join 'ov/config.yaml') ($f.repo | path join 'ov/config.yaml')
                 assert equal (($f.home | path join 'xdg-data/nushell/zoxide.nu') | path type) 'file'
                 contains (
                     open --raw (
@@ -108,6 +109,7 @@ export def cases [] {
                 let plugins = $f.config | path join 'yazi/plugins/local.yazi'
                 put ($plugins | path join 'main.lua') 'local plugin'
                 put ($f.config | path join 'starship.toml') "# old prompt\n"
+                put ($f.config | path join 'ov/config.yaml') "# local pager settings\n"
                 put ($f.home | path join '.gitconfig') "[user]\nname = Local\n"
                 ok (bootstrap $f)
                 let expected = {
@@ -135,9 +137,11 @@ export def cases [] {
                 assert equal ($backups | length) 1
                 assert equal (open --raw $backups.0) "# old prompt\n"
                 assert equal (open --raw ($f.home | path join '.gitconfig.local')) "[user]\nname = Local\n"
+                assert equal (open --raw ($f.config | path join 'ov/config.yaml')) "# local pager settings\n"
                 ok (bootstrap $f)
                 assert equal (starship-backups $f) $backups
                 assert (open --raw $settings | from json | get local)
+                assert equal (open --raw ($f.config | path join 'ov/config.yaml')) "# local pager settings\n"
                 for entry in ($ssh_files | transpose name content) {
                     assert equal (open --raw ($ssh | path join $entry.name)) $entry.content
                 }
