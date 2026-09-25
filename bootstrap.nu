@@ -194,6 +194,12 @@ def main [
         source: ($dots | path join "starship.toml")
         destination: ($env.STARSHIP_CONFIG? | default ($config_home | path join "starship.toml"))
     })
+    if $nu.os-info.name == "windows" {
+        $links = ($links | append {
+            source: ($dots | path join "bash" "windows.bash")
+            destination: ($home | path join ".bashrc")
+        })
+    }
     let ov_config = $config_home | path join "ov" "config.yaml"
     if ($ov_config | path type) == null {
         $links = ($links | append {
