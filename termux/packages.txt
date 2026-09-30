@@ -7,11 +7,14 @@ fd
 gh
 git
 git-delta
-golang
 jq
 keychain
+less
+mise
 neovim
 nodejs
+npm
+nushell
 openssh
 perl
 proot
@@ -21,6 +24,4 @@ termux-api
 termux-services
 tmux
 util-linux
-zig
-zoxide
 zsh

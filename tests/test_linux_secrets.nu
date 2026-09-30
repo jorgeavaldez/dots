@@ -26,7 +26,11 @@ def secret-fixture [base: record] {
 def discovery [f: record, tools: record] {
     let encoded = $tools | to json -r | to nuon
     script $f mise (
-        'def --wrapped main [...args: string] { let tools = (@TOOLS@ | from json); print ($tools | get ($args | last)) }'
+        'def --wrapped main [...args: string] {
+            if $env.TERMUX_VERSION? != null and $env.MISE_AUTO_ENV? != "1" { error make {msg: "Android overlay missing during explicit tool resolution"} }
+            let tools = @TOOLS@ | from json
+            print ($tools | get ($args | last))
+        }'
         | str replace '@TOOLS@' $encoded
     )
 }
@@ -61,8 +65,8 @@ def fail-chmod [f: record, target: string, --substring] {
     let operator = if $substring { 'contains' } else { 'ends-with' }
     script $f chmod ('def --wrapped main [...args: string] {
     if ($args | last | str @OPERATOR@ @TARGET@) { exit 73 }
-    exec /usr/bin/chmod ...$args
-}' | str replace '@OPERATOR@' $operator | str replace '@TARGET@' ($target | to nuon))
+    exec @CHMOD@ ...$args
+}' | str replace '@CHMOD@' ($f.tools.chmod | to nuon) | str replace '@OPERATOR@' $operator | str replace '@TARGET@' ($target | to nuon))
 }
 
 # A background job transports a complete result, including unexpected Nu errors.
@@ -123,6 +127,28 @@ def concurrent [f: record] {
 
 export def cases [] {
     [
+        {
+            name: test_android_enrollment_refresh_and_hook_use_private_files
+            run: {|base|
+                let f = secret-fixture ($base | update env ($base.env | merge {TERMUX_VERSION: 'test'}))
+                secrets $f 'secrets setup; secrets setup-shell' | ignore
+                let sources = $f.config | path dirname | path join sources.toml
+                put $sources '[secrets]
+ANDROID_TEST = { default = "synthetic-android" }
+'
+                secrets $f 'secrets refresh' | ignore
+                mode $f.config '600'
+                mode (key $f) '600'
+                mode ($f.config | path dirname) '700'
+                let before = snapshot $f
+                secrets $f 'secrets setup' | ignore
+                assert equal (snapshot $f) $before
+                let hook = $f.home | path join '.local/share/nushell/vendor/autoload/fnox.nu'
+                secrets $f $'source ($hook | to nuon); if $env.ANDROID_TEST? != "synthetic-android" { error make {msg: "Android hook did not load"} }' | ignore
+                lacks (open --raw $f.config) synthetic-android
+                op-absent $f
+            }
+        }
         {
             name: test_concurrent_setup_rejects_contender_and_preserves_winner
             run: {|base| concurrent (secret-fixture $base) }
@@ -222,7 +248,7 @@ export def cases [] {
                     fnox $f [
                         exec
                         --
-                        /bin/sh
+                        $f.tools.sh
                         -c
                         'test "$TEST_DOTS_SECRET" = synthetic-test-only'
                     ]

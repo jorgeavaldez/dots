@@ -39,6 +39,8 @@ disabled = true
 
 # jj-starship: unified prompt for jj and git repos
 [custom.jj]
-when = "jj-starship detect"
-shell = ["jj-starship"]
+# jj-starship is optional on Android; do not spawn a missing executable.
+when = "command -v jj-starship >/dev/null 2>&1 && jj-starship detect"
+command = "jj-starship"
+shell = ["sh"]
 format = "$output"

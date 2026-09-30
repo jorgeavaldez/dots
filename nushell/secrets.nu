@@ -1,9 +1,11 @@
 # Device enrollment and global cache refresh; fnox's native hook owns loading.
 const dots = path self | path expand | path dirname | path dirname
+use platform.nu [termux android-mise]
 
 # Explicit setup/refresh only, never shell startup: mise lookups are expensive.
 # Resolve the shared tool versions independently of the current project.
-def installed-tool [name: string] {
+def --env installed-tool [name: string] {
+    android-mise
     let result = (^mise --cd $dots which $name | complete)
     if $result.exit_code != 0 {
         error make {msg: $"Install ($name) with bootstrap.nu before using secrets."}
@@ -24,7 +26,7 @@ export def init [] {
     let sources = (sources-path)
     if not ($sources | path exists) {
         mkdir ($sources | path dirname)
-        if $nu.os-info.name == "linux" {
+        if $nu.os-info.name == "linux" or (termux) {
             do --capture-errors { ^chmod 700 ($sources | path dirname) }
         }
         '# Private source map. Keep this file outside dots.
@@ -36,7 +38,7 @@ type = "1password"
 # Non-sensitive, device-specific values can be stored here as plaintext defaults.
 # HOMELAB_URL = { default = "https://example.invalid" }
 ' | save $sources
-        if $nu.os-info.name == "linux" {
+        if $nu.os-info.name == "linux" or (termux) {
             do --capture-errors { ^chmod 600 $sources }
         }
         print $"Created empty secrets template: ($sources)"
@@ -55,7 +57,7 @@ export def setup-shell [] {
     print $"Installed native fnox integration: ($target). Open a new Nu shell to use it."
 }
 
-# Linux uses a private file, not a desktop keychain or an SSH agent.
+# Linux and Termux use a private file, not a desktop keychain or an SSH agent.
 def setup-linux [identity_file] {
     let directory = config-path | path dirname
     mkdir $directory
@@ -146,11 +148,11 @@ def setup-linux-locked [identity_file] {
 
 # One-time enrollment; never replace an existing device identity.
 export def setup [--identity: path] {
-    if $nu.os-info.name == "linux" {
+    if $nu.os-info.name == "linux" or (termux) {
         setup-linux $identity
         return
     }
-    if $identity != null { error make {msg: "File identity import is Linux-only; native credential storage is unchanged."} }
+    if $identity != null { error make {msg: "File identity import is Linux/Termux-only; native credential storage is unchanged."} }
     if $nu.os-info.name not-in ["windows" "macos"] {
         error make {msg: "Secrets setup currently supports Windows and macOS only."}
     }
@@ -219,8 +221,8 @@ export def setup [--identity: path] {
 
 # Refresh the global cache; the native hook reloads it at the next prompt.
 export def refresh [] {
-    if $nu.os-info.name not-in ["windows" "macos" "linux"] {
-        error make {msg: "Secrets refresh supports Windows, macOS, and Linux."}
+    if $nu.os-info.name not-in ["windows" "macos" "linux"] and not (termux) {
+        error make {msg: "Secrets refresh supports Windows, macOS, Linux and Termux."}
     }
 
     let config = (config-path)
@@ -252,7 +254,7 @@ export def refresh [] {
     let pending = $staging | path join "config.toml"
     mkdir $staging
     try {
-        if $nu.os-info.name == "linux" {
+        if $nu.os-info.name == "linux" or (termux) {
             do --capture-errors { ^chmod 700 $staging }
         }
         cp $config $pending
@@ -296,7 +298,7 @@ export def refresh [] {
             )
         }
         $updated | update secrets ($cache | reject ...$removed) | to toml | save --force $pending
-        if $nu.os-info.name == "linux" {
+        if $nu.os-info.name == "linux" or (termux) {
             do --capture-errors { ^chmod 600 $pending }
         }
         mv --force $pending $config

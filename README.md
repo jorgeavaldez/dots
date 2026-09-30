@@ -2,7 +2,7 @@
 
 my dotfiles
 
-## Nushell bootstrap (Windows, macOS, and Linux)
+## Nushell bootstrap (Windows, macOS, Linux and Termux)
 
 Start with a copy of this repository and:
 
@@ -103,13 +103,13 @@ Neovim and its config are **entirely separate**, including Windows config links.
 The jj diff/merge editor expects the custom Neovim commands already installed
 there. This bootstrap does not install Docker/Postgres, enroll secrets or
 configure SSH authentication, install Yazi plugins/flavors, or configure desktop
-permissions/shortcuts. Existing config links are covered below. Termux remains
-on `install.android.sh` and `pkg`; its Nu migration is separate. The Nu bootstrap
-rejects Termux rather than attempting to run mise there.
+permissions/shortcuts. Existing config links are covered below. Termux uses
+`install.android.sh` to seed native prerequisites and then the same Nu bootstrap;
+see the Android limits and explicit exceptions below.
 
 ### Automatic secrets
 
-Linux uses a private file-backed age identity, with no keyring or `op` dependency
+Linux and Termux use a private file-backed age identity, with no keyring or `op` dependency
 for local encrypted secrets. See [Linux secrets setup](docs/linux-secrets.md)
 for enrollment and provisioning devices that do not run 1Password. SSH auth is
 independent: Nu preserves the inherited agent, and regular OpenSSH continues to
@@ -227,7 +227,7 @@ repository; only the empty template is shared. If moving from the old repository
 shell; that old repository path is now ignored. Do not share device identities
 or encrypted caches. For each project on the new device, check out its references
 and run the project sync command to build that device's local cache. The old Zsh
-setup and Termux integration are unchanged.
+setup is unchanged; Termux now uses the shared Nu integration.
 
 ### macOS setup and smoke test
 
@@ -376,11 +376,133 @@ cd ~/dots
 ./install.android.sh
 ```
 
-The Android installer supports ARM64 Termux devices. It installs the native packages listed in `termux/packages.txt`, installs the npm packages in `termux/npm-packages.txt`, installs Herdr through its official installer, downloads the latest ARM64 musl Jujutsu and fnox releases, and links the shared shell, tmux, Starship, Jujutsu, Git, and Yazi configuration. Pi is installed through its officially supported Termux setup on native Termux Node.js. Existing dotfile destinations are preserved unless you explicitly run `./install.android.sh --force`.
+The ARM64 Android entrypoint seeds native **mise, Nushell and Node.js/npm**
+plus the existing Termux essentials in `termux/packages.txt`. Optional native
+language packages follow the Android selection, not an unconditional pkg list.
+It retains Pi's supported native npm distribution and Herdr setup, and downloads
+the musl jj binary needed by the shared-storage wrapper. It then hands off to
+`bootstrap.nu`. It no longer installs fnox separately or owns shared config
+links. Existing Zsh files and the login shell are unchanged; start `nu` explicitly.
+`./install.android.sh --dry-run` requires the native seed to be present and
+previews shared bootstrap without package/network changes. There is no destructive
+`--force`: files are backed up and directory conflicts stop setup.
 
-fnox is installed at `~/.local/bin/fnox` after verifying the archive's SHA-256 against GitHub release metadata and checking that the binary runs. Its static musl build runs directly in Termux without compiling Rust. The installer does not configure secrets or activate automatic secret loading.
+`mise/config.toml` remains the unchanged canonical tool/version catalog. The
+`termux/config.android.toml` overlay is installed as
+`$MISE_CONFIG_DIR/config.android.toml` (default `~/.config/mise`). Its native
+`settings.enable_tools` allowlist defaults to **nu, node, fnox, age, zoxide,
+carapace, go and zig**. Mise filters unselected global and project declarations
+before version/metadata resolution, including GitHub Pi and Cargo nufmt. Native
+Pi and the compiled `~/.local/bin/nufmt` remain independent exceptions.
 
-The installer deliberately does not install or configure mise, glibc compatibility, a PRoot Linux distribution, or managed language toolchains. It installs the small `proot` package only for the Jujutsu shared-storage wrapper described below. Android's Bionic libc directly recognizes `en_US.UTF-8`, so no locale package or `locale-gen` step is needed. On Termux, `termux-services` owns a stable SSH agent and interactive shells use `keychain` to load `~/.ssh/id_ed25519`; non-interactive Zsh sessions reuse the same unlocked agent.
+Opt in or out by creating the **device-local**, untracked
+`~/.config/mise/config.android.local.toml` (or under your `MISE_CONFIG_DIR`):
+
+```toml
+[settings]
+enable_tools = ["nu", "node", "fnox", "age", "zoxide", "carapace", "go", "zig", "java"]
+```
+
+This replaces the selection, not versions. Keep the six core integration names;
+setup rejects removing them or selecting shared Pi/nufmt. The local file may
+only contain `settings.enable_tools`. Rerun the installer after changing native
+language opt-ins. The overlay lives under `termux/` so mise does not rediscover
+it as a project default in this checkout and override device-local settings.
+Bootstrap checks native effective selection before installation; it neither
+creates a second catalog nor looks up selection/tool paths during startup.
+Android uses native `less -FRX` rather than an unselected ov. Starship quietly
+omits its optional jj-starship module when that executable is absent.
+
+The overlay selects verified GitHub backends for Nu,
+fnox, age (including age-keygen), zoxide and carapace. **Nu is a native pkg runtime
+exception**, not just a seed: normal HTTPS `http get` fails DNS resolution in the
+tested musl Nu 0.116.0 on Termux, while native Nu 0.116.0 succeeds. Mise registers
+native Nu through `$XDG_DATA_HOME/dots/pkg/nu/bin/nu` and Node/npm/npx through
+three symlinks in `$XDG_DATA_HOME/dots/pkg/node/bin`, never the whole `$PREFIX`
+(which would shadow managed tools). Musl Nu can report `linux`, so bootstrap
+also recognizes Termux's environment markers. npm tools remain mise-managed,
+except the existing native Pi distribution.
+
+**Go retains the native golang package through mise's path registration** at
+`$XDG_DATA_HOME/dots/pkg/go -> $PREFIX/lib/go`. Upstream mise Go 1.27.1 reports
+Linux host/target defaults: a compiled pure-Go networking program fails Android
+DNS, and default cgo linking fails on `__android_log_vprint`. Explicit
+`GOOS=android GOARCH=arm64 CGO_ENABLED=1 CC=$PREFIX/bin/clang` succeeds for both
+cgo and DNS/verified HTTPS, but silently changing those defaults is not native
+host parity. Native Go has Android host/target defaults and passes the same
+networking and cgo proofs without overrides. Keep its full compiler/runtime
+root; do not register just the go executable.
+
+**Zig uses mise's upstream 0.16.0 binary**, not a redundant pkg copy. Compiled
+Zig executables run both with the default musl target and explicit
+`-target aarch64-linux-android`. A C allocation/stdio program also compiles and
+runs against Bionic with explicit Termux headers, CRTs and system libraries:
+
+```sh
+zig cc -target aarch64-linux-android \
+  -isystem "$PREFIX/include" -isystem "$PREFIX/include/aarch64-linux-android" \
+  main.c "$PREFIX/lib/crtbegin_dynamic.o" \
+  /system/lib64/libc.so /system/lib64/libm.so /system/lib64/libdl.so \
+  "$PREFIX/lib/crtend_android.o" -nostdlib \
+  -Wl,--dynamic-linker=/system/bin/linker64 -o main
+```
+
+Neither the audited native nor upstream Zig automatically discovers Android
+libc for plain `zig cc`. This is an explicit target/linking requirement, not a
+claim of automatic Android libc or full desktop toolchain parity.
+
+Java, Erlang and Elixir are **optional**, narrow native exceptions: Java's Android
+metadata URL returns 404 and the default Erlang backend selects Ubuntu artifacts.
+Only when selected, bootstrap links the dedicated package trees `lib/jvm/java-25-openjdk`,
+`lib/erlang` and `opt/elixir` under `$XDG_DATA_HOME/dots/pkg/{java,erlang,elixir}`.
+These retain JDK libraries and companion commands (`javac`, `jar`, `keytool`,
+`erlc`, `escript`, `epmd`, `elixirc`, `iex`, `mix`); mise exports `JAVA_HOME`
+from the JDK root. The audited native versions are **OpenJDK 25.0.4,
+Erlang/OTP 29.1.1 and Elixir 1.20.4 (compiled with OTP 29)**, not an assertion
+that native packages equal desktop `latest`. Termux package updates own native
+patch versions; no Java 26 language requirement has been established.
+Java HTTPS uses the JDK's bundled trust store. Mix compilation locking requires
+hard links denied by native Termux; the Android overlay uses Mix's supported
+`MIX_OS_CONCURRENCY_LOCK=0` opt-out. **Serialize Mix builds sharing a build
+directory**: cross-process compilation locking is unavailable on this device.
+
+Android bootstrap uses ordinary **filtered `mise install`**, not a hardcoded
+ten-tool list. Only selected native roots are preflighted/registered. Java/BEAM
+backend mappings remain available for future opt-in, but are not defaults.
+Other catalog entries remain disabled, not deleted or implicitly installed.
+Selecting an additional name is an opt-in, not a promise of Android support.
+
+Android-only `settings.npm.shell_out=true` is an explicitly approved workaround
+for mise 2026.9.14's embedded npm TLS verifier requiring a JVM context unavailable
+in Termux. **TLS certificate and hostname verification stay enabled**, install
+scripts remain disabled by default, and the tested npm install propagated release
+age. However, npm shell-out **bypasses aube's extra trust-downgrade check**; it is
+not security-equivalent to the embedded backend. No insecure TLS setting is used.
+Keep Termux's termux-exec/`LD_PRELOAD` support for npm shebangs.
+
+Android overlay discovery is enabled by `MISE_AUTO_ENV=1` in bootstrap, Nu startup
+and explicit `secrets setup-shell` tool resolution. XDG and `MISE_CONFIG_DIR`
+overrides are preserved. An explicit `MISE_GLOBAL_CONFIG_FILE` suppresses adjacent
+overlays in the tested mise version, and an explicit `MISE_AUTO_ENV=0/false`
+disables them: setup/startup fail before using the wrong backends rather than
+silently overriding those choices. Explicitly unset those overrides and use
+`MISE_CONFIG_DIR` if you want this integration. Custom override-file support
+requires separate work. Bootstrap preserves local fnox configs and never enrolls
+credentials. `secrets setup`/`--identity` and `secrets refresh` use the same private
+age-file path and permissions as Linux; see [Linux secrets setup](docs/linux-secrets.md).
+After fnox/zoxide upgrades, regenerate static hooks explicitly via
+`secrets setup-shell` and bootstrap respectively, never startup tool lookups.
+
+Nu uses Termux:API's `termux-clipboard-set/get`, preserving UTF-8 and trailing
+newlines (the Android API app must be available). Locale defaults to
+`en_US.UTF-8` without replacing explicit LANG/LC_CTYPE values; Android's Bionic
+recognizes it without locale-gen. Nu preserves inherited SSH agents (including
+forwarded Herdr sockets), or reuses the termux-services socket if no agent was
+inherited. It never loads keys or enrolls credentials; unlock your keys explicitly
+when needed. No Vicinae desktop state or WezTerm terminfo download is created on
+Android. PRoot remains only for the jj shared-storage wrapper, not a Linux distro.
+Nu's `jj` command and its aliases dispatch through that wrapper even after mise
+reorders PATH; `^jj` explicitly bypasses Nu commands and follows external PATH.
 
 ### Jujutsu on Android shared storage
 

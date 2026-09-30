@@ -1,10 +1,15 @@
+const platform_module = path self | path expand | path dirname | path join "platform.nu"
+use $platform_module [termux android-mise]
+android-mise
+
 $env.BAT_THEME = "ansi"
-$env.PAGER = "ov -F"
+# Android does not opt into ov; use the native pager without a startup lookup.
+$env.PAGER = if (termux) { "less -FRX" } else { "ov -F" }
 if $env.EDITOR? == null { $env.EDITOR = "nvim" }
 if $env.VISUAL? == null { $env.VISUAL = $env.EDITOR }
 
 # Use the installed mise and user commands without changing device SSH settings.
-if $nu.os-info.name in ["linux" "macos"] {
+if $nu.os-info.name in ["linux" "macos"] or (termux) {
     # tmux and Zellij use SHELL for new panes; leave the login shell unchanged.
     $env.SHELL = $nu.current-exe
     $env.PATH = ($env.PATH | prepend ($nu.home-dir | path join ".local" "bin") | uniq)
@@ -23,6 +28,16 @@ if $nu.os-info.name == "macos" {
         "/usr/local/sbin"
     ] | where {|entry| $entry | path exists}
     $env.PATH = ($env.PATH | prepend $paths | uniq)
+}
+
+if (termux) {
+    $env.LANG = ($env.LANG? | default "en_US.UTF-8")
+    $env.LC_CTYPE = ($env.LC_CTYPE? | default "en_US.UTF-8")
+    # Reuse a forwarded/device agent. Never start an agent or load keys here.
+    if ($env.SSH_AUTH_SOCK? | default "") == "" {
+        let socket = $env.PREFIX | path join "var" "run" "ssh-agent.socket"
+        if ($socket | path expand | path type) == "socket" { $env.SSH_AUTH_SOCK = $socket }
+    }
 }
 
 # Keep mise-managed versions ahead of inherited copies (such as Pi's rg).

@@ -2,10 +2,11 @@
 use std/assert
 
 export def tools [] {
-    assert equal $nu.os-info.name 'linux' 'These integration tests require Linux'
+    assert ($nu.os-info.name in ['linux' 'android']) 'These integration tests require Linux or Termux'
     mut tools = {}
     for spec in [
         [nu NU_BIN]
+        [mise MISE_BIN]
         [fnox FNOX_BIN]
         [age-keygen AGE_KEYGEN_BIN]
         [zoxide ZOXIDE_BIN]
@@ -21,15 +22,18 @@ export def tools [] {
         $tools = $tools | insert $spec.0 $absolute
     }
     for executable in [
-        /usr/bin/env
-        /usr/bin/timeout
-        /usr/bin/chmod
-        /usr/bin/stat
-        /usr/bin/readlink
-        /usr/bin/ln
-        /usr/bin/tic
+        env
+        timeout
+        chmod
+        stat
+        readlink
+        ln
+        tic
+        sh
     ] {
-        assert ($executable | path exists) $"Required Linux utility missing: ($executable)"
+        let found = which $executable
+        assert ($found | is-not-empty) $"Required utility missing: ($executable)"
+        $tools = $tools | insert $executable ($found.0.path | path expand --no-symlink)
     }
     $tools
 }
@@ -49,16 +53,26 @@ export def fixture [tools: record] {
         bin: $bin
         tools: $tools
         repo: ($env.FILE_PWD | path dirname)
-        env: {
+        env: ({
             HOME: $home
-            PATH: $"($bin):/usr/bin:/bin"
+            PATH: (
+                $tools
+                | values
+                | each {|tool| $tool | path dirname }
+                | prepend $bin
+                | append ['/usr/bin' '/bin']
+                | uniq
+                | str join ':'
+            )
             XDG_CONFIG_HOME: $config
             XDG_DATA_HOME: ($home | path join '.local/share')
             XDG_CACHE_HOME: ($home | path join '.cache')
             XDG_STATE_HOME: ($home | path join '.local/state')
             TMPDIR: $tmp
             TERM: xterm-256color
-        }
+            # Native Termux binaries need the exec/environment shim even in
+            # isolated fixtures. This is a runtime library, not user config.
+        } | merge (if $env.LD_PRELOAD? != null { {LD_PRELOAD: $env.LD_PRELOAD} } else { {} }))
     }
 }
 
@@ -73,7 +87,7 @@ export def child [
     assert ($args.0 | str starts-with '/') 'Child executable must be absolute'
     let assignments = $f.env | transpose key value | each {|entry| $"($entry.key)=($entry.value)" }
     cd $f.root
-    $input | ^/usr/bin/env -i ...$assignments /usr/bin/timeout --kill-after=2s $"($seconds)s" ...$args | complete
+    $input | ^$f.tools.env -i ...$assignments $f.tools.timeout --kill-after=2s $"($seconds)s" ...$args | complete
 }
 
 export def ok [result: record] {
@@ -94,7 +108,7 @@ export def put [path: string, text: string] {
 export def script [f: record, name: string, body: string] {
     let path = $f.bin | path join $name
     put $path ($"#!($f.tools.nu) --no-config-file\n" + $body + "\n")
-    ok (^/usr/bin/chmod 755 $path | complete)
+    ok (^chmod 755 $path | complete)
 }
 
 export def absent [path: string] {
@@ -103,7 +117,7 @@ export def absent [path: string] {
 
 export def link [path: string, target: string] {
     assert equal ($path | path type) symlink
-    let result = ^/usr/bin/readlink $path | complete
+    let result = ^readlink $path | complete
     ok $result
     assert equal ($result.stdout | str trim) $target
 }
@@ -111,7 +125,7 @@ export def link [path: string, target: string] {
 export def contains [text: string, needle: string] { assert ($text | str contains $needle) $"Missing ($needle) in: ($text)" }
 export def lacks [text: string, needle: string] { assert not ($text | str contains $needle) $"Unexpected ($needle) in: ($text)" }
 export def mode [path: string, expected: string] {
-    let result = ^/usr/bin/stat -c '%a' $path | complete
+    let result = ^stat -c '%a' $path | complete
     ok $result
     assert equal ($result.stdout | str trim) $expected
 }
