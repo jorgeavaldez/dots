@@ -32,6 +32,8 @@ def bootstrap [f: record, args: list<any> = []] {
         [
             $f.tools.nu
             '--no-config-file'
+            '--error-style'
+            'plain'
             ($f.repo | path join 'bootstrap.nu')
         ]
         | append $args
@@ -281,9 +283,16 @@ export def cases [] {
                 let mise_dir = $base.home | path join custom-mise
                 let f = $base | update env (
                     $base.env
-                    | merge {TERMUX_VERSION: 'test' PREFIX: $prefix MISE_CONFIG_DIR: $mise_dir}
+                    | merge {
+                        TERMUX_VERSION: 'test'
+                        PREFIX: $prefix
+                        MISE_CONFIG_DIR: $mise_dir
+                        # Use the retained seed for preflight on either host;
+                        # Linux cannot execute the linked Termux wrapper's shebang.
+                        PATH: ($"($base.home | path join .local/libexec):($base.env.PATH)")
+                    }
                 )
-                # The retained wrapper needs its seed binary on the second run.
+                # The wrapper link remains real; its seed handles config queries.
                 script $f jj 'def --wrapped main [...args: string] { print ($env.XDG_CONFIG_HOME | path join jj/config.toml) }'
                 mkdir ($f.home | path join .local/libexec)
                 mv ($f.bin | path join jj) ($f.home | path join .local/libexec/jj)
