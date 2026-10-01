@@ -21,7 +21,8 @@ def sources-path [] {
     config-path | path dirname | path join "sources.toml"
 }
 
-# Create a private, empty reference map without enrolling a device or fetching keys.
+# Create the private source map; enrolled devices also get local age storage.
+# Never fetch secrets or replace existing entries/providers.
 export def init [] {
     let sources = (sources-path)
     if not ($sources | path exists) {
@@ -29,7 +30,11 @@ export def init [] {
         if $nu.os-info.name == "linux" or (termux) {
             do --capture-errors { ^chmod 700 ($sources | path dirname) }
         }
-        '# Private source map. Keep this file outside dots.
+        '# Private source of truth. Keep this file outside dots.
+# After secrets setup: secrets local KEY (hidden paste), or pipe a value into it.
+# Local keys are encrypted with source-age using the enrolled device identity.
+# Run secrets refresh after changes to rebuild config.toml for shell loading.
+# Delete a [secrets] entry and refresh to remove it from the cache.
 [providers.onepassword]
 type = "1password"
 
@@ -45,6 +50,41 @@ type = "1password"
     } else {
         print $"Existing secrets references preserved: ($sources)"
     }
+    let config = (config-path)
+    if ($config | path exists) {
+        let provider = (open $config).providers?.dots-age?
+        if $provider != null and (open $sources).providers?.source-age? == null {
+            # Append instead of rewriting the user's references and comments.
+            if $nu.os-info.name == "linux" or (termux) {
+                do --capture-errors { ^chmod 600 $sources }
+            }
+            "\n# Encrypted local source; shares the enrolled device identity.\n" + ({
+                providers: {source-age: $provider}
+            } | to toml)
+            | save --append $sources
+        }
+    }
+}
+
+# Store in the authoritative source map, never directly in the derived cache.
+# No value argument: stdin or fnox's hidden prompt keeps keys out of argv/history.
+export def local [name: string]: nothing -> nothing, string -> nothing {
+    let value = $in
+    if $name == "DOTS_AGE_IDENTITY" {
+        error make {msg: "DOTS_AGE_IDENTITY is reserved for the device key."}
+    }
+    let config = (config-path)
+    if not ($config | path exists) { error make {msg: "Run secrets setup first."} }
+    if (open $config).providers?.dots-age? == null { error make {msg: "Run secrets setup first."} }
+    init
+    let sources = (sources-path)
+    let fnox = (installed-tool fnox)
+    if $value == null {
+        ^$fnox --config $sources --profile default --no-daemon set $name --provider source-age
+    } else {
+        $value | ^$fnox --config $sources --profile default --no-daemon set $name --provider source-age
+    }
+    print $"Stored ($name) in sources.toml. Run secrets refresh to update the shell cache."
 }
 
 # Bootstrap and post-upgrade setup share this owner; no secrets are resolved.
@@ -96,6 +136,7 @@ def setup-linux-locked [identity_file] {
         if ($checked.stdout | str trim) not-in $local.providers.dots-age.recipients {
             error make {msg: "Existing identity does not match the configured recipient. Nothing was replaced."}
         }
+        init
         print "Secrets device already configured; identity and cache preserved."
         return
     }
@@ -143,7 +184,7 @@ def setup-linux-locked [identity_file] {
     }
     rm --recursive --force $pending
     init
-    print "Secrets device configured with a private age file. Use fnox set --global --provider dots-age, or configure sources and refresh."
+    print "Secrets device configured with a private age file. Use secrets local KEY or add provider references, then secrets refresh."
 }
 
 # One-time enrollment; never replace an existing device identity.
@@ -156,7 +197,6 @@ export def setup [--identity: path] {
     if $nu.os-info.name not-in ["windows" "macos"] {
         error make {msg: "Secrets setup currently supports Windows and macOS only."}
     }
-    init
     let config = (config-path)
     let fnox = (installed-tool fnox)
     if ($config | path exists) {
@@ -171,6 +211,7 @@ export def setup [--identity: path] {
         if $identity.exit_code != 0 {
             error make {msg: "The existing device identity could not be read from the OS credential store. It was not replaced."}
         }
+        init
         print "Secrets device already configured; identity and cache preserved. Run secrets refresh to sync."
         return
     }
@@ -216,7 +257,8 @@ export def setup [--identity: path] {
         rm --force $pending
         error make {msg: $err.msg}
     }
-    print $"Secrets device configured. Add references to (sources-path), then run secrets refresh."
+    init
+    print $"Secrets device configured. Use secrets local KEY or add references to (sources-path), then run secrets refresh."
 }
 
 # Refresh the global cache; the native hook reloads it at the next prompt.

@@ -150,6 +150,82 @@ ANDROID_TEST = { default = "synthetic-android" }
             }
         }
         {
+            name: test_local_encrypted_sources_refresh_without_op
+            run: {|base|
+                for overlay in [
+                    {}
+                    {TERMUX_VERSION: 'test'}
+                ] {
+                    let f = secret-fixture ($base | update env ($base.env | merge $overlay))
+                    secrets $f 'secrets setup' | ignore
+                    let sources = $f.config | path dirname | path join sources.toml
+                    assert equal (open $sources).providers.source-age (open $f.config).providers.dots-age
+                    let before = open --raw $f.config
+                    let result = secrets $f '"synthetic-local" | secrets local LOCAL_KEY'
+                    lacks ($result.stdout + $result.stderr) synthetic-local
+                    assert equal (open --raw $f.config) $before
+                    assert equal (open $sources).secrets.LOCAL_KEY.provider source-age
+                    lacks (open --raw $sources) synthetic-local
+                    mode $sources '600'
+                    let settings = open $sources
+                    $settings | upsert secrets.VAULT_PATH {default: '/synthetic/vault'} | to toml | save --force $sources
+                    secrets $f 'secrets refresh' | ignore
+                    assert equal ((fnox $f [get LOCAL_KEY]).stdout | str trim) synthetic-local
+                    assert equal ((fnox $f [get VAULT_PATH]).stdout | str trim) /synthetic/vault
+                    secrets $f '"synthetic-rotated" | secrets local LOCAL_KEY; secrets refresh' | ignore
+                    assert equal ((fnox $f [get LOCAL_KEY]).stdout | str trim) synthetic-rotated
+                    lacks (open --raw $sources) synthetic-rotated
+                    lacks (open --raw $f.config) synthetic-rotated
+                    open $sources | reject secrets.LOCAL_KEY | to toml | save --force $sources
+                    secrets $f 'secrets refresh' | ignore
+                    assert not ('LOCAL_KEY' in ((open $f.config).secrets | columns))
+                    op-absent $f
+                }
+            }
+        }
+        {
+            name: test_setup_adds_local_provider_without_replacing_source_entries
+            run: {|base|
+                let f = secret-fixture $base
+                secrets $f 'secrets setup' | ignore
+                let sources = $f.config | path dirname | path join sources.toml
+                put $sources '# Keep my comments and defaults.
+[secrets]
+VAULT_PATH = { default = "/synthetic/vault" }
+'
+                let before = snapshot $f
+                secrets $f 'secrets setup' | ignore
+                assert equal (snapshot $f) $before
+                contains (open --raw $sources) '# Keep my comments and defaults.'
+                assert equal (open $sources).secrets.VAULT_PATH.default /synthetic/vault
+                assert equal (open $sources).providers.source-age (open $f.config).providers.dots-age
+                let enrolled = open --raw $sources
+                secrets $f 'secrets setup; secrets init' | ignore
+                assert equal (open --raw $sources) $enrolled
+                op-absent $f
+            }
+        }
+        {
+            name: test_local_requires_enrollment_rejects_identity_and_propagates_fnox_failure
+            run: {|base|
+                let f = secret-fixture $base
+                secrets $f '"synthetic-local" | secrets local LOCAL_KEY' --fail | ignore
+                absent ($f.config | path dirname)
+                secrets $f 'secrets setup' | ignore
+                let sources = $f.config | path dirname | path join sources.toml
+                let before = open --raw $sources
+                secrets $f '"synthetic-local" | secrets local DOTS_AGE_IDENTITY' --fail | ignore
+                assert equal (open --raw $sources) $before
+                script $f failing-fnox 'def --wrapped main [...args: string] { exit 73 }'
+                discovery $f ($f.tools | update fnox ($f.bin | path join failing-fnox))
+                let result = secrets $f '"synthetic-local" | secrets local LOCAL_KEY' --fail
+                assert equal $result.exit_code 73
+                lacks $result.stdout 'Stored LOCAL_KEY'
+                assert equal (open --raw $sources) $before
+                op-absent $f
+            }
+        }
+        {
             name: test_concurrent_setup_rejects_contender_and_preserves_winner
             run: {|base| concurrent (secret-fixture $base) }
         }

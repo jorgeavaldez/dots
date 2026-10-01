@@ -124,9 +124,10 @@ secrets setup
 
 This creates a separate age identity for this device and stores its private key
 in Windows Credential Manager or macOS Keychain. It also creates an empty,
-commented `sources.toml` template if missing. Repeating setup preserves existing
-references, identity, and cache. Both `sources.toml` and the encrypted
-`config.toml` stay in `~/.config/fnox/` (or `$env.FNOX_CONFIG_DIR`),
+commented `sources.toml` template if missing, with a `source-age` provider using
+the same device identity for encrypted local inputs. Repeating setup preserves
+existing entries, providers, identity, and cache; it adds `source-age` if missing.
+Both `sources.toml` and the encrypted `config.toml` stay in `~/.config/fnox/` (or `$env.FNOX_CONFIG_DIR`),
 **outside dots and not symlinked**. An unrelated existing fnox config stops
 enrollment rather than being overwritten.
 
@@ -137,8 +138,34 @@ anything, run:
 secrets init
 ```
 
-The command prints its path and never overwrites an existing file. Add your
-variables under `[secrets]` in that **private** `sources.toml`:
+The command prints its path and preserves existing entries and comments. On an
+enrolled device it also adds `source-age` if missing. `sources.toml` is the source
+of truth; `config.toml` is the derived shell cache.
+
+For local API keys, no 1Password CLI or server is required:
+
+```nu
+secrets local OPENAI_API_KEY
+secrets refresh
+```
+
+`secrets local KEY` encrypts a pasted value from fnox's hidden prompt into the
+private source file. It also accepts a string piped from a trusted process:
+
+```nu
+$env.OPENAI_API_KEY | secrets local OPENAI_API_KEY
+```
+
+There is no value argument, so secrets need not appear in shell history or argv.
+To copy from the 1Password phone app, start the hidden prompt, copy the key,
+return and paste, then clear the clipboard and any keyboard clipboard history.
+No supported Android-app-to-Termux CLI integration is required. Run refresh after
+adding or rotating keys. Delete their `[secrets]` entries and refresh to remove
+them from the cache. Avoid `fnox set --global` for managed keys: refresh removes
+cached keys absent from sources.
+
+For remote provider references or non-sensitive defaults, edit `[secrets]` in
+that **private** `sources.toml`:
 
 ```toml
 [providers.onepassword]
@@ -152,16 +179,16 @@ HOMELAB_URL = { default = "https://example.invalid" }
 `default` stores a non-sensitive, device-specific value in plaintext in the
 private source file; never put credentials there. Provider-backed entries can
 use any fnox source provider configured in this file, not just 1Password.
-For 1Password, enter actual credentials there, not in this file or shell
-command arguments. Authenticate with your source provider, then fetch and
-encrypt the values locally:
+For 1Password, enter `op://` references, not credential values. Authenticate with
+your source provider when using remote references, then rebuild the local cache:
 
 ```nu
 secrets refresh
 ```
 
-Refresh encrypts both provider-backed and plaintext-default entries into the
-local age cache and removes entries whose mappings were deleted.
+Refresh resolves encrypted local inputs, remote-provider references, and
+plaintext defaults into the local age cache and removes entries whose mappings
+were deleted. The native hook reads only the cache, not `sources.toml`.
 fnox's native shell hook applies the changes at the next prompt. Repeat refresh
 after adding references or rotating keys; existing child processes need restarting
 to see updates. `DOTS_AGE_IDENTITY` is reserved for the device identity and is

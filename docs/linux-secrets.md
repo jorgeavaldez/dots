@@ -15,9 +15,12 @@ secrets setup
 
 This generates `~/.config/fnox/age.txt` and `config.toml` (mode `600`) inside a
 mode-`700` directory. `FNOX_CONFIG_DIR`, when set, selects a different directory.
-`secrets init` only creates a private `sources.toml` template; it does not enroll
-or fetch credentials. Bootstrap installs the native shell hook but does not
-create an identity. No tool-path lookups happen merely by importing the module.
+`secrets init` creates a private `sources.toml` template without enrolling or
+fetching credentials. Once enrolled, setup/init add a `source-age` provider using
+the device's existing identity, without replacing entries, comments, or existing
+providers. Repeating setup upgrades an older source map this way. Bootstrap
+installs the native shell hook but does not create an identity. No tool-path
+lookups happen merely by importing the module.
 
 To restore an existing **age identity file** instead of generating one:
 
@@ -47,22 +50,52 @@ The private file is **not encrypted at rest**: protect the account and backups,
 prefer disk encryption, and remember that any process running as your user can
 read the key and decrypt the cache. Do not commit the identity, sources, or cache.
 
-## Populate and use a cache without `op`
+## Local encrypted sources without `op`
 
-Store a secret directly using fnox's hidden interactive prompt (no secret in argv
-or history):
+`sources.toml` is the private source of truth; `config.toml` is its derived shell
+cache. `source-age` encrypts local inputs in the source map; `dots-age` encrypts
+the cache. Both use the same enrolled device identity. No server, `op`, or
+password-manager session is needed for this flow.
+
+Store a key using fnox's hidden interactive prompt, then refresh:
 
 ```nu
-fnox set --global MY_SERVICE_TOKEN --provider dots-age
+secrets local MY_SERVICE_TOKEN
+secrets refresh
 fnox --non-interactive check --all
 fnox --non-interactive exec -- your-command
 ```
 
-Alternatively pipe the value from a trusted process into the same `fnox set`
-command. Do not put literal credentials in shell commands. Stored values in the
-global config are encrypted for this device; future reads/injection need the
-identity but do not need the original provider. `secrets setup-shell` regenerates
-the native fnox hook after upgrades; open a new Nu shell afterward. Existing child
+`secrets local KEY` accepts only the variable name as an argument. Paste the key
+at the hidden prompt, not on the shell command line. To use the 1Password Android
+app, copy the selected field, return to Termux and paste into that prompt. Clear
+the clipboard and keyboard clipboard history afterward. This is manual transfer,
+not an automatic connection to the app.
+
+Alternatively pipe a string from a trusted process. For a selected key already
+inherited from the old `secrets.sh`:
+
+```nu
+$env.MY_SERVICE_TOKEN | secrets local MY_SERVICE_TOKEN
+secrets refresh
+```
+
+This encrypts the value in `sources.toml`, never directly in the cache, and does
+not print the secret or put it in argv. Do not put literal credentials in shell
+commands. Repeat local + refresh to rotate a key. Remove its `[secrets]` entry
+and refresh to remove it from the cache. Other entries, including non-sensitive
+plaintext defaults, remain in the same source map. `DOTS_AGE_IDENTITY` is reserved
+and cannot be added with `secrets local`.
+
+A future desktop bridge can resolve selected 1Password references on a desktop,
+encrypt them to the phone's public recipient, and transfer ciphertext to update
+the phone's encrypted source entries. Only the public recipient leaves the phone;
+no private identity or plaintext transfer is needed. That bridge is not automated
+by these commands.
+
+Stored values in both files are encrypted for this device; shell injection needs
+the identity and derived cache, not the original password manager.
+`secrets setup-shell` regenerates the native fnox hook after upgrades; open a new Nu shell afterward. Existing child
 processes do not retroactively receive new environment variables.
 
 For another machine, prefer generating a distinct identity there and sharing
@@ -74,11 +107,12 @@ When restoring a cache, preserve the destination `dots-age.key_file` path and
 provider name and verify decryption with `fnox check`/`fnox exec` before relying
 on it. Do not forward or copy a new device's private key just to refresh it.
 
-## Optional source refresh
+## Optional remote references and plaintext defaults
 
-On a device with access to the configured source provider (1Password requires
-an installed, authenticated `op` CLI), or with device-specific non-sensitive
-plaintext defaults:
+The same source map can mix local encrypted inputs with remote references and
+non-sensitive plaintext defaults. Remote 1Password entries require an installed,
+authenticated `op` CLI during refresh; simply having a `[providers.onepassword]`
+stanza with no secrets using it does not require `op`.
 
 1. In Nu, create the template if needed and open the **device-local** file in
    Neovim. This respects `FNOX_CONFIG_DIR`; replace `nvim` with your editor if
@@ -130,8 +164,9 @@ plaintext defaults:
    $env.OPENAI_API_KEY? != null
    ```
 
-Refresh syncs provider-backed entries and encrypts plaintext-default entries
-into a staged global age cache; failed source access leaves the live cache intact.
+Refresh resolves encrypted local and remote-provider entries, and encrypts
+plaintext defaults into a staged global age cache. Failed source access leaves
+the live cache intact.
 Other fnox source providers can be configured in `sources.toml`; use a provider
 name other than the destination `dots-age`. Each provider-backed source must
 produce a `dots-age` encrypted result.
@@ -140,11 +175,11 @@ produce a `dots-age` encrypted result.
 `op` can read an already-populated local age cache, but cannot refresh 1Password
 references. A successful cached check is not proof of source authentication.
 
-**Choose one cache-management workflow:** refresh treats `sources.toml` as the
-complete set of global `dots-age` secrets and removes cached keys absent from it.
-Do not run refresh against an empty template after adding keys manually with
-`fnox set`; it will remove those keys. Use direct `fnox set` for a standalone
-no-`op` device, or maintain the complete source map for a refresh-managed device.
+**Keep sources authoritative:** refresh treats `sources.toml` as the complete set
+of global `dots-age` secrets and removes cached keys absent from it. Use
+`secrets local`, not `fnox set --global`, for local inputs that must survive
+refresh. If keys were added directly to the cache, migrate them into the source
+map before refreshing; an empty source map would remove them.
 
 ## Isolated integration tests
 
