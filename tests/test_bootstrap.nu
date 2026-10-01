@@ -32,8 +32,6 @@ def bootstrap [f: record, args: list<any> = []] {
         [
             $f.tools.nu
             '--no-config-file'
-            '--error-style'
-            'plain'
             ($f.repo | path join 'bootstrap.nu')
         ]
         | append $args
@@ -387,10 +385,11 @@ enable_tools = ["nu", "node", "fnox", "age", "zoxide", "carapace", "java", "erla
                     mv $source $"($source).saved"
                     let result = bootstrap $f
                     assert ($result.exit_code != 0)
-                    contains $result.stderr $root
+                    contains $result.stderr 'Missing source'
                     absent ($f.root | path join mise-calls)
                     absent ($f.config | path join mise/config.toml)
                     mv $"($source).saved" $source
+                    ok (bootstrap $f ['--dry-run'])
                 }
             }
         }
