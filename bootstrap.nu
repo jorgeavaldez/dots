@@ -176,6 +176,7 @@ def main [
             {tool: java, package: openjdk-25}
             {tool: erlang, package: erlang}
             {tool: elixir, package: elixir}
+            {tool: shellcheck, package: shellcheck}
         ] {
             if $package.tool in $android_tools { print $package.package }
         }
@@ -292,6 +293,7 @@ def main [
             {tool: "node", binary: "node"}
             {tool: "node", binary: "npm"}
             {tool: "node", binary: "npx"}
+            {tool: "shellcheck", binary: "shellcheck"}
         ] {
             if $native.tool not-in $android_tools { continue }
             $links = ($links | append {

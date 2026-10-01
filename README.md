@@ -405,7 +405,7 @@ cd ~/dots
 
 The ARM64 Android entrypoint seeds native **mise, Nushell and Node.js/npm**
 plus the existing Termux essentials in `termux/packages.txt`. Optional native
-language packages follow the Android selection, not an unconditional pkg list.
+packages follow the Android selection, not an unconditional pkg list.
 It retains Pi's supported native npm distribution and Herdr setup, and downloads
 the musl jj binary needed by the shared-storage wrapper. It then hands off to
 `bootstrap.nu`. It no longer installs fnox separately or owns shared config
@@ -433,7 +433,7 @@ enable_tools = ["nu", "node", "fnox", "age", "zoxide", "carapace", "go", "zig", 
 This replaces the selection, not versions. Keep the six core integration names;
 setup rejects removing them or selecting shared Pi/nufmt. The local file may
 only contain `settings.enable_tools`. Rerun the installer after changing native
-language opt-ins. The overlay lives under `termux/` so mise does not rediscover
+tool opt-ins. The overlay lives under `termux/` so mise does not rediscover
 it as a project default in this checkout and override device-local settings.
 Bootstrap checks native effective selection before installation; it neither
 creates a second catalog nor looks up selection/tool paths during startup.
@@ -449,6 +449,17 @@ three symlinks in `$XDG_DATA_HOME/dots/pkg/node/bin`, never the whole `$PREFIX`
 (which would shadow managed tools). Musl Nu can report `linux`, so bootstrap
 also recognizes Termux's environment markers. npm tools remain mise-managed,
 except the existing native Pi distribution.
+
+**ShellCheck is an optional native pkg exception.** Aqua requests an
+Android-named archive that upstream does not publish; upstream v0.11.0's static
+Linux ARM64 binary is killed by Android seccomp at `set_robust_list` (`SIGSYS`)
+on the audited device. Add `shellcheck` to the device-local `enable_tools` list
+and rerun the installer. It installs the native `shellcheck` package, and
+bootstrap registers only `$PREFIX/bin/shellcheck` through
+`$XDG_DATA_HOME/dots/pkg/shellcheck/bin/shellcheck`. Mise selects this dedicated
+root; Termux package upgrades own its version. The compatibility mapping lives
+in the shared Android overlay, so no generic `config.local.toml` override is
+needed.
 
 **Go retains the native golang package through mise's path registration** at
 `$XDG_DATA_HOME/dots/pkg/go -> $PREFIX/lib/go`. Upstream mise Go 1.27.1 reports
@@ -495,7 +506,8 @@ directory**: cross-process compilation locking is unavailable on this device.
 
 Android bootstrap uses ordinary **filtered `mise install`**, not a hardcoded
 ten-tool list. Only selected native roots are preflighted/registered. Java/BEAM
-backend mappings remain available for future opt-in, but are not defaults.
+backend mappings remain available for future opt-in, as does ShellCheck; none
+are defaults.
 Other catalog entries remain disabled, not deleted or implicitly installed.
 Selecting an additional name is an opt-in, not a promise of Android support.
 
