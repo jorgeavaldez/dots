@@ -111,6 +111,7 @@ export def cases [] {
     [
         {
             name: test_linux_dry_run_does_not_check_or_install_system_packages
+            platform: linux
             run: {|fixture|
                 let f = bootstrap-fixture $fixture
                 let result = bootstrap $f ['--dry-run']
@@ -123,6 +124,7 @@ export def cases [] {
         }
         {
             name: test_linux_full_bootstrap_uses_real_integrations_and_terminfo
+            platform: linux
             run: {|fixture|
                 let f = mock-mise-installs (bootstrap-fixture $fixture)
                 ok (bootstrap $f)
@@ -141,6 +143,7 @@ export def cases [] {
         }
         {
             name: test_managed_files_backups_and_local_state_survive_rerun
+            platform: linux
             run: {|fixture|
                 let f = mock-mise-installs (bootstrap-fixture $fixture)
                 let ssh = $f.home | path join '.ssh'
@@ -194,6 +197,7 @@ export def cases [] {
         }
         {
             name: test_late_directory_conflict_stops_before_install_or_links
+            platform: linux
             run: {|fixture|
                 let f = mock-mise-installs (bootstrap-fixture $fixture)
                 mkdir ($f.config | path join 'zellij/config.kdl')
@@ -206,6 +210,7 @@ export def cases [] {
         }
         {
             name: test_git_backup_collision_stops_before_install
+            platform: linux
             run: {|fixture|
                 let f = mock-mise-installs (bootstrap-fixture $fixture)
                 for name in ['.gitconfig' '.gitconfig.local'] {
@@ -220,6 +225,7 @@ export def cases [] {
         }
         {
             name: test_dangling_links_are_backed_up_but_mutable_vicinae_is_preserved
+            platform: linux
             run: {|fixture|
                 let f = mock-mise-installs (bootstrap-fixture $fixture)
                 mkdir $f.config
@@ -253,6 +259,7 @@ export def cases [] {
         }
         {
             name: test_explicit_config_overrides_are_respected
+            platform: linux
             run: {|fixture|
                 let base = mock-mise-installs (bootstrap-fixture $fixture)
                 let f = $base | update env ($base.env | merge {

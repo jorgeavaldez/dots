@@ -46,7 +46,7 @@ export def fixture [tools: record] {
     let bin = $home | path join '.local/bin'
     let tmp = $root | path join tmp
     mkdir $home $bin $tmp
-    {
+    let f = {
         root: $root
         home: $home
         config: $config
@@ -74,6 +74,15 @@ export def fixture [tools: record] {
             # isolated fixtures. This is a runtime library, not user config.
         } | merge (if $env.LD_PRELOAD? != null { {LD_PRELOAD: $env.LD_PRELOAD} } else { {} }))
     }
+    # Tool directories also expose host clipboard commands. Block them unless a
+    # case deliberately replaces these sentinels with fixture-only implementations.
+    for name in [termux-clipboard-set termux-clipboard-get wl-copy wl-paste xclip] {
+        script $f $name 'def --wrapped main [...args: string] {
+            print --stderr "Host clipboard access is forbidden in tests"
+            exit 73
+        }'
+    }
+    $f
 }
 
 # Absolute env/timeout and an explicit allowlist ensure a fresh child's startup
@@ -87,7 +96,12 @@ export def child [
     assert ($args.0 | str starts-with '/') 'Child executable must be absolute'
     let assignments = $f.env | transpose key value | each {|entry| $"($entry.key)=($entry.value)" }
     cd $f.root
-    $input | ^$f.tools.env -i ...$assignments $f.tools.timeout --kill-after=2s $"($seconds)s" ...$args | complete
+    let result = $input | ^$f.tools.env -i ...$assignments $f.tools.timeout --kill-after=2s $"($seconds)s" ...$args | complete
+    # Native Nu reports signals as negative numbers; callers use shell statuses
+    # (SIGKILL = 137), including expected-failure checks that reject timeouts.
+    $result | update exit_code (
+        if $result.exit_code < 0 { 128 - $result.exit_code } else { $result.exit_code }
+    )
 }
 
 export def ok [result: record] {

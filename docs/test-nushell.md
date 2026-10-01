@@ -1,6 +1,7 @@
-# Linux integration tests in Nushell
+# Linux and Termux integration tests in Nushell
 
-Run the sequential suite with Nu 0.115.1 and its bundled `std/assert`:
+Run the sequential suite with Nu and its bundled `std/assert` (CI pins 0.115.1;
+native Termux currently uses 0.116.0):
 
 ```sh
 "$NU_BIN" --no-config-file tests/run.nu
@@ -10,12 +11,14 @@ Run the sequential suite with Nu 0.115.1 and its bundled `std/assert`:
 
 ## Tools and environment
 
-Required: Linux, Nu 0.115.1, real fnox, age-keygen, zoxide, ncurses `tic`,
+Required: Linux or native Termux, Nu, real fnox, age-keygen, zoxide, ncurses `tic`,
 GNU coreutils (`env`, `timeout`, `chmod`, `stat`, `readlink`, `ln`, `mkdir`,
-`rmdir`), and `/bin/sh`. Full bootstrap cases download WezTerm's real terminfo
+`rmdir`), and a POSIX `sh` on PATH. Full bootstrap cases download WezTerm's real terminfo
 using Nu's HTTP client, so they require working HTTPS access. Missing required
-tools are failures, never skips. Python and external Nu test frameworks are not
-required. The runtime suite does not require a formatter.
+tools are failures, never skips. The synthetic SSH socket probe uses Python,
+and native Android history
+restart coverage requires tmux. External Nu test frameworks and formatters are
+not required by the runtime suite.
 
 `NU_BIN`, `FNOX_BIN`, `AGE_KEYGEN_BIN`, and `ZOXIDE_BIN` retain their meanings.
 If an override is absent, the runner searches PATH. Use actual executable paths,
@@ -40,22 +43,32 @@ working directory, and isolated HOME, all four XDG directories, and TMPDIR.
 This is deliberately not just `with-env`: the fresh Nu process must see the
 isolated paths before initialization. Host fnox/mise variables, display values,
 and credentials are not inherited. SSH preservation tests create only synthetic
-files; clipboard tests use Nu stubs, never the desktop clipboard.
+files; clipboard tests use Nu stubs, never the desktop or phone clipboard.
+Every fixture installs failing sentinels for Termux, Wayland, and X11 clipboard
+commands. A clipboard case must replace them with fixture-only implementations
+before it can use those commands. This blocks host APIs even when tool paths
+also expose host utilities.
 
 ## Coverage and boundaries
 
-The original 27 Python cases retain their names and behavioral assertions:
+The suite covers:
 
-- 8 bootstrap cases: dry run, real integrations/terminfo, managed symlinks,
-  backups, rerun idempotence, mutable local state, dangling links, conflicts,
-  overrides, and both Termux rejection markers.
-- 15 secrets cases: real age/fnox encryption and decryption, private modes,
-  injected chmod failures, staging cleanup, identity/config preservation,
-  import validation, failed 1Password refresh, native hook cache loading,
-  and deterministic concurrent enrollment.
-- 4 shell cases: interactive startup, synthetic SSH agent preservation,
-  Wayland/X11 Unicode clipboard round trips with exact trailing newlines,
-  and the headless error.
+- Bootstrap: Linux integrations/terminfo, managed symlinks, backups, conflicts,
+  overrides, and Android overlay selection/native roots.
+- Secrets: real age/fnox encryption and decryption, local encrypted source input,
+  refresh/rotation/removal, private modes, failed enrollment/refresh preservation,
+  identity import, native hook loading, and concurrent enrollment.
+- Shell: interactive startup, synthetic SSH agents, stubbed clipboard round
+  trips, native Android history restart, denied host clipboard access, and
+  forced timeout/process-group cleanup.
+
+The runner probes the resolved `NU_BIN` runtime's OS before selecting cases.
+Linux-specific bootstrap and shell cases declare `platform: linux`. Native
+Android reports them as `SKIP`, with the reason, rather than trying to simulate
+Linux by clearing `TERMUX_VERSION`/`PREFIX`. Clearing environment variables does
+not change `$nu.os-info.name`; changing production platform detection to fool
+tests would test the wrong behavior. Android-overlay cases also run on Linux,
+while the actual native-history restart only runs with native Android Nu.
 
 Two additional sentinel cases cover absent native hooks and installed hooks
 without a cache: no dynamic mise lookup, enrollment, or 1Password fallback.
@@ -63,7 +76,10 @@ An installed native hook does invoke its embedded real fnox binary; “no-op”
 means no secrets loaded, no cache/identity created, and no fallback tool calls,
 not zero external processes.
 
-Expected total: 29 passed, 0 failed. Subcases stay within their original cases.
+With the current 46 cases, Linux runs all 46; native Android runs 34 and reports
+12 Linux-only cases skipped. Skips are counted separately from passes. Linux CI
+continues to exercise the Linux-only assertions; an Android pass is not evidence
+for those paths. Subcases stay within their original cases.
 The mise bulk `install --yes` boundary is mocked, with strict argument checking;
 fnox, age, zoxide, symlinks, permissions, `tic`, and terminfo download remain real.
 All executable stubs, including clipboard and paused age-keygen, use Nu. The
@@ -87,7 +103,7 @@ Real mise/zoxide imports are generated outside the checkout. Nu wrappers verify
 cleared environment and isolated HOME/XDG; fault injection does not replace the
 real-tool success cases. Every invocation asserts sandbox cleanup. Checked
 scripts are deliberately runtime errors to prove lint does not execute them.
-The expected result is 10 passing probe groups, separately from the 29 runtime
+The expected result is 10 passing probe groups, separate from the runtime
 integration cases. This probe is not implicitly run by `make lint`.
 
 ## Failure handling
@@ -95,7 +111,18 @@ integration cases. This probe is not implicitly run by `make lint`.
 The runner reports every case, removes each fixture in `finally`, and exits 1
 if any case failed. `complete` results are asserted explicitly; expected secrets
 failures cannot pass merely because a child timed out. Ordinary children have a
-90-second GNU timeout and a 2-second forced-kill grace period.
+90-second GNU timeout and a 2-second forced-kill grace period. Interactive-shell
+checks use 10 seconds; native history's terminal/restart scenario uses 20 seconds.
+The timeout regression deliberately ignores TERM and verifies forced termination
+within the grace period, with no running descendant left behind. Native Nu's
+negative signal statuses are normalized to shell exit codes in the shared child
+boundary, so SIGKILL is 137 and cannot masquerade as an expected command error.
+
+For a potentially hanging run, use an auditable tmux session and an outer
+`timeout --kill-after=5s 120s` around the suite. The outer bound is not a substitute
+for per-child cleanup. Interrupting the runner can bypass Nu's `finally`; child
+deadlines still bound their lifetime, but immediate interrupt cleanup is not
+guaranteed. Do not remove a fixture while its children are still running.
 
 The enrollment race uses entered/release files rather than sleep-based ordering.
 Its wrapper has a 15-second barrier deadline; the first child has a 20-second

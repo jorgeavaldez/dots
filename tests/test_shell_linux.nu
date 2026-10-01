@@ -26,8 +26,8 @@ def interactive [f: record, code: string, --fail] {
         -i
         -c
         $code
-    ]
-    if not $fail { ok $result }
+    ] --seconds 10
+    if $fail { assert ($result.exit_code not-in [0 124 137]) 'Expected shell failure, not success or timeout' } else { ok $result }
     $result
 }
 
@@ -137,7 +137,7 @@ test "$status" = 0
                         ($f.repo | path join nushell/config.nu)
                         $tmux.0.path
                         $f.tools.sh
-                    ]
+                    ] --seconds 20
                 )
                 assert equal (open --raw ($f.home | path join persisted-count) | str trim) '1'
                 assert ($f.config | path join nushell/history.sqlite3 | path exists)
@@ -182,6 +182,7 @@ test "$status" = 0
         }
         {
             name: "test_linux_jj_dispatch_preserves_stdin_and_bump_errors"
+            platform: linux
             run: {|fixture|
                 let f = shell-fixture $fixture
                 script $f jj 'def --wrapped main [...args: string] {
@@ -204,6 +205,7 @@ test "$status" = 0
         }
         {
             name: "test_linux_shell_and_device_agent"
+            platform: linux
             run: {|fixture|
                 let f = shell-fixture $fixture
                 let result = (
@@ -216,6 +218,7 @@ test "$status" = 0
         }
         {
             name: "test_wayland_clipboard_preserves_bytes"
+            platform: linux
             run: {|fixture|
                 let base = shell-fixture $fixture
                 let f = $base | update env ($base.env | merge {WAYLAND_DISPLAY: "wayland-0"})
@@ -228,6 +231,7 @@ test "$status" = 0
         }
         {
             name: "test_x11_clipboard_preserves_bytes"
+            platform: linux
             run: {|fixture|
                 let base = shell-fixture $fixture
                 let f = $base | update env ($base.env | merge {DISPLAY: ":0"})
@@ -240,11 +244,50 @@ test "$status" = 0
         }
         {
             name: "test_headless_clipboard_reports_missing_session"
+            platform: linux
             run: {|fixture|
                 let f = shell-fixture $fixture
                 let result = interactive $f '"test" | pbcopy' --fail
                 assert ($result.exit_code != 0)
                 contains ($result.stderr | str lowercase) "display"
+            }
+        }
+        {
+            name: test_child_timeout_forces_blocked_process_group_to_exit
+            run: {|f|
+                let started = date now
+                # Ignore TERM so this exercises timeout's forced-kill grace too.
+                let result = child $f [
+                    $f.tools.sh
+                    -c
+                    'trap "" TERM; sleep 60 & printf "%s\n" "$!" > "$HOME/blocked-pid"; wait'
+                ] --seconds 1
+                assert ($result.exit_code in [124 137]) $"Unexpected blocked-child exit: ($result.exit_code)"
+                assert ((date now) - $started < 10sec) 'Child timeout did not bound execution'
+                let pid = open --raw ($f.home | path join blocked-pid) | str trim
+                let status = '/proc' | path join $pid stat
+                if ($status | path exists) {
+                    # A killed orphan may briefly await reaping; it must not run.
+                    assert equal (open --raw $status | split row ' ' | get 2) Z
+                }
+            }
+        }
+        {
+            name: test_fixture_blocks_unstubbed_host_clipboards
+            run: {|f|
+                for name in [
+                    termux-clipboard-set
+                    termux-clipboard-get
+                    wl-copy
+                    wl-paste
+                    xclip
+                ] {
+                    let result = child $f [
+                        ($f.bin | path join $name)
+                    ] --seconds 5
+                    assert equal $result.exit_code 73
+                    contains $result.stderr 'Host clipboard access is forbidden'
+                }
             }
         }
         {
