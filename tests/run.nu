@@ -3,6 +3,7 @@
 use std/assert
 use helpers.nu [tools fixture ok]
 use test_bootstrap.nu
+use test_agent_browser.nu
 use test_linux_secrets.nu
 use test_shell_linux.nu
 
@@ -13,7 +14,7 @@ def main [--filter: string = ''] {
     let runtime = ^$resolved.nu --no-config-file -c '$nu.os-info.name' | complete
     ok $runtime
     let platform = $runtime.stdout | str trim
-    let cases = (test_bootstrap cases) | append (test_linux_secrets cases) | append (test_shell_linux cases) | where {|case| $case.name | str contains $filter }
+    let cases = (test_bootstrap cases) | append (test_agent_browser cases) | append (test_linux_secrets cases) | append (test_shell_linux cases) | where {|case| $case.name | str contains $filter }
     assert ($cases | is-not-empty) $"No tests matched: ($filter)"
     mut passed = 0
     mut failed = 0

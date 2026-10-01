@@ -284,6 +284,7 @@ def main [
         $links = ($links | append [
             {source: ($dots | path join "termux" "config.android.toml"), destination: ($mise_dir | path join "config.android.toml")}
             {source: ($dots | path join "termux" "jj-wrapper.sh"), destination: ($home | path join ".local" "bin" "jj")}
+            {source: ($dots | path join "termux" "agent-browser-wrapper.sh"), destination: ($home | path join ".local" "bin" "agent-browser")}
         ])
         # Preflight narrow native roots without exposing all Termux binaries.
         for native in [

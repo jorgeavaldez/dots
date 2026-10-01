@@ -16,9 +16,9 @@ jobs:
       matrix:
         include:
           - image: debian:bookworm
-            seed: apt-get update && apt-get install -y ca-certificates curl git build-essential xz-utils ncurses-bin python3
+            seed: apt-get update && apt-get install -y ca-certificates curl git build-essential xz-utils ncurses-bin python3 proot
           - image: archlinux:base-devel
-            seed: pacman -Syu --noconfirm --needed ca-certificates curl git base-devel xz ncurses python
+            seed: pacman -Syu --noconfirm --needed ca-certificates curl git base-devel xz ncurses python proot
     container: ${{ matrix.image }}
     steps:
       # Disposable CI images need provisioning. Bootstrap itself never does this.

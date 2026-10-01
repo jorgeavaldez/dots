@@ -15,8 +15,8 @@ Required: Linux or native Termux, Nu, real fnox, age-keygen, zoxide, ncurses `ti
 GNU coreutils (`env`, `timeout`, `chmod`, `stat`, `readlink`, `ln`, `mkdir`,
 `rmdir`), and a POSIX `sh` on PATH. Full bootstrap cases download WezTerm's real terminfo
 using Nu's HTTP client, so they require working HTTPS access. Missing required
-tools are failures, never skips. The synthetic SSH socket probe uses Python,
-and native Android history
+tools are failures, never skips. Full-suite browser launcher tests require
+PRoot; the synthetic SSH socket probe uses Python, and native Android history
 restart coverage requires tmux. External Nu test frameworks and formatters are
 not required by the runtime suite.
 
@@ -58,6 +58,8 @@ The suite covers:
 - Secrets: real age/fnox encryption and decryption, local encrypted source input,
   refresh/rotation/removal, private modes, failed enrollment/refresh preservation,
   identity import, native hook loading, and concurrent enrollment.
+- Browser launcher: real PRoot resolver mapping, stream/exit-code preservation,
+  detached daemon lifetime, and launch-failure cleanup.
 - Shell: interactive startup, synthetic SSH agents, stubbed clipboard round
   trips, native Android history restart, denied host clipboard access, and
   forced timeout/process-group cleanup.
@@ -76,7 +78,7 @@ An installed native hook does invoke its embedded real fnox binary; “no-op”
 means no secrets loaded, no cache/identity created, and no fallback tool calls,
 not zero external processes.
 
-With the current 46 cases, Linux runs all 46; native Android runs 34 and reports
+With the current 49 cases, Linux runs all 49; native Android runs 37 and reports
 12 Linux-only cases skipped. Skips are counted separately from passes. Linux CI
 continues to exercise the Linux-only assertions; an Android pass is not evidence
 for those paths. Subcases stay within their original cases.

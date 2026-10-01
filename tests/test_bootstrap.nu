@@ -307,6 +307,7 @@ export def cases [] {
                 link ($mise_dir | path join config.toml) ($f.repo | path join mise/config.toml)
                 link ($mise_dir | path join config.android.toml) ($f.repo | path join termux/config.android.toml)
                 link ($f.home | path join .local/bin/jj) ($f.repo | path join termux/jj-wrapper.sh)
+                link ($f.home | path join .local/bin/agent-browser) ($f.repo | path join termux/agent-browser-wrapper.sh)
                 link ($f.home | path join xdg-data/dots/pkg/nu/bin/nu) ($prefix | path join bin/nu)
                 for binary in [node npm npx] {
                     link ($f.home | path join xdg-data/dots/pkg/node/bin $binary) ($prefix | path join bin $binary)

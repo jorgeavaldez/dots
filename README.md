@@ -527,9 +527,30 @@ recognizes it without locale-gen. Nu preserves inherited SSH agents (including
 forwarded Herdr sockets), or reuses the termux-services socket if no agent was
 inherited. It never loads keys or enrolls credentials; unlock your keys explicitly
 when needed. No Vicinae desktop state or WezTerm terminfo download is created on
-Android. PRoot remains only for the jj shared-storage wrapper, not a Linux distro.
+Android. PRoot is used for the jj shared-storage and agent-browser DNS wrappers,
+not a Linux distro.
 Nu's `jj` command and its aliases dispatch through that wrapper even after mise
 reorders PATH; `^jj` explicitly bypasses Nu commands and follows external PATH.
+
+### Agent-browser DNS on Android
+
+`bootstrap.nu` links `termux/agent-browser-wrapper.sh` as
+`~/.local/bin/agent-browser`. Keep that directory ahead of other agent-browser
+installations on PATH; Pi's native tool also resolves this external command.
+The launcher uses the unchanged npm-installed Linux-musl ARM64 binary at
+`$PREFIX/lib/node_modules/agent-browser/bin/agent-browser-linux-musl-arm64`.
+If it is missing, install upstream with `npm install --global --ignore-scripts agent-browser`.
+Chromium setup remains upstream/Termux-owned.
+
+URL `read` runs in the upstream daemon, whose musl resolver expects
+`/etc/resolv.conf`. PRoot maps `$PREFIX/etc/resolv.conf` there without root,
+a Linux distro, or system-file changes. The launcher streams CLI stdin/stdout/stderr
+and returns its exit code without waiting for or killing the detached daemon.
+The tracer exits when that daemon closes or reaches its normal idle timeout.
+After installing this launcher, close any older **affected session** once before
+retrying: an already-running daemon cannot acquire the new mapping. Restart Pi
+if its inherited PATH does not contain `~/.local/bin` ahead of the old command.
+Upstream npm upgrades leave the dotfiles launcher untouched.
 
 ### Jujutsu on Android shared storage
 
