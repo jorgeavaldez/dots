@@ -31,6 +31,14 @@ latest = "path:{{ env.XDG_DATA_HOME }}/dots/pkg/node"
 [tool_alias.go.versions]
 latest = "path:{{ env.XDG_DATA_HOME }}/dots/pkg/go"
 
+# Upstream ShellCheck v0.11.0 hits Android seccomp at set_robust_list (SIGSYS).
+# Register the optional native package through its dedicated tool root.
+[tool_alias.shellcheck]
+backend = "github:koalaman/shellcheck"
+
+[tool_alias.shellcheck.versions]
+latest = "path:{{ env.XDG_DATA_HOME }}/dots/pkg/shellcheck"
+
 # Java's Android metadata returns 404; Erlang's default artifacts target Ubuntu.
 # Audited native packages: openjdk-25 25.0.4, Erlang 29.1.1, Elixir 1.20.4
 # (compiled with OTP 29). Package upgrades own native patch versions.
