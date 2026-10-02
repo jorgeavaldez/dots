@@ -18,12 +18,20 @@ jobs:
           - image: debian:bookworm
             seed: apt-get update && apt-get install -y ca-certificates curl git build-essential xz-utils ncurses-bin python3 proot
           - image: archlinux:base-devel
-            seed: pacman -Syu --noconfirm --needed ca-certificates curl git base-devel xz ncurses python proot
+            seed: pacman -Syu --noconfirm --needed ca-certificates curl git base-devel xz ncurses python talloc uthash
     container: ${{ matrix.image }}
     steps:
       # Disposable CI images need provisioning. Bootstrap itself never does this.
       - name: Seed test container
         run: ${{ matrix.seed }}
+      # PRoot is not in Arch's official repositories; build only the test tool.
+      - name: Install PRoot on Arch
+        if: matrix.image == 'archlinux:base-devel'
+        run: |
+          curl --fail --location https://github.com/proot-me/proot/archive/refs/tags/v5.4.0.tar.gz -o "$RUNNER_TEMP/proot.tar.gz"
+          tar -xzf "$RUNNER_TEMP/proot.tar.gz" -C "$RUNNER_TEMP"
+          make -C "$RUNNER_TEMP/proot-5.4.0/src" proot
+          make -C "$RUNNER_TEMP/proot-5.4.0/src" install
       - uses: actions/checkout@v4
       - uses: jdx/mise-action@v3
         with:
