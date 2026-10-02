@@ -61,6 +61,11 @@ export PAGER="ov -F"
 export BAT_THEME="ansi"
 export GOOSE_CLI_THEME="ansi"
 
+# Per-device vault location; an inherited explicit override wins.
+if [[ "${PREFIX:-}" == /data/data/com.termux/files/usr ]]; then
+    export OBSIDIAN_VAULT_PATH="${OBSIDIAN_VAULT_PATH:-/storage/emulated/0/obsidian/delvaze}"
+fi
+
 export ANDROID_HOME="$HOME/Android/Sdk"
 export ANDROID_SDK_ROOT="$HOME/Android/Sdk"
 

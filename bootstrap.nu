@@ -1,9 +1,10 @@
 # Run with: nu --no-config-file bootstrap.nu [--dry-run]
 # Windows seed: Nushell + WinGet. macOS seed: Nushell + Homebrew.
-# Linux (Arch/Debian): mise, Nushell and system prerequisites already installed.
+# Linux: mise, Nushell and system prerequisites installed. Termux: install.android.sh seeds them.
 const dots = path self | path dirname
 use nushell/links.nu symlink
 use nushell/secrets.nu
+use nushell/platform.nu [termux android-mise]
 
 # Installers update the registry, not this process's inherited PATH.
 def --env refresh-system-path [] {
@@ -106,26 +107,27 @@ def ensure-compiler-prerequisites [] {
 
 def main [
     --dry-run # Show actions without installing packages or changing files.
+    --android-packages # Print selected optional native packages for the Termux seed installer.
 ] {
-    if ($env.TERMUX_VERSION? | default "" | is-not-empty) or ($env.PREFIX? | default "" | str contains "com.termux") or $nu.os-info.name == "android" {
-        error make {msg: "Termux is not supported by bootstrap.nu; use install.android.sh."}
-    }
+    let android = termux
+    android-mise
+    let os = if $android { "android" } else { $nu.os-info.name }
     let home = $nu.home-dir
     let config_home = $env.XDG_CONFIG_HOME? | default ($home | path join ".config")
-    let platform = match $nu.os-info.name {
+    let platform = match $os {
         windows => {
             wezterm: ($home | path join ".config" "wezterm")
             jj: ($env.APPDATA | path join "jj" "config.toml")
             herdr: ($env.APPDATA | path join "herdr" "config.toml")
             yazi: ($env.APPDATA | path join "yazi" "config")
         }
-        macos | linux => {
+        macos | linux | android => {
             wezterm: ($config_home | path join "wezterm")
             jj: ($config_home | path join "jj" "config.toml")
             herdr: ($config_home | path join "herdr" "config.toml")
             yazi: ($config_home | path join "yazi")
         }
-        _ => { error make {msg: "This bootstrap supports Windows, macOS and Linux."} }
+        _ => { error make {msg: "This bootstrap supports Windows, macOS, Linux and Termux."} }
     }
     refresh-system-path
     let manager = if $nu.os-info.name == "windows" { "winget" } else { "brew" }
@@ -135,6 +137,51 @@ def main [
         $env.MISE_GLOBAL_CONFIG_FILE?
         | default ($mise_dir | path join "config.toml")
     )
+    let android_tools = if $android {
+        let local = $mise_dir | path join "config.android.local.toml"
+        if ($local | path exists) {
+            let config = open $local
+            if ($config | columns) != ["settings"] or ($config.settings | columns) != ["enable_tools"] {
+                error make {msg: "Android local config may only set settings.enable_tools (names, not versions)."}
+            }
+        }
+        # Preflight names only, before the native global links exist. Mise owns
+        # version resolution/filtering; verify its effective settings after links.
+        let selected: list<string> = (open (if ($local | path exists) { $local } else {
+            $dots | path join "termux" "config.android.toml"
+        }) | get settings.enable_tools | sort | uniq)
+        for tool in [
+            nu
+            node
+            fnox
+            age
+            zoxide
+            carapace
+        ] {
+            if $tool not-in $selected {
+                error make {msg: $"Android core integration requires ($tool) in settings.enable_tools."}
+            }
+        }
+        for tool in ["github:earendil-works/pi" "cargo:https://github.com/nushell/nufmt"] {
+            if $tool in $selected {
+                error make {msg: $"Android retains native Pi and compiled nufmt; do not enable ($tool)."}
+            }
+        }
+        $selected
+    } else { [] }
+    if $android_packages {
+        if not $android { error make {msg: "--android-packages requires Termux."} }
+        for package in [
+            {tool: go, package: golang}
+            {tool: java, package: openjdk-25}
+            {tool: erlang, package: erlang}
+            {tool: elixir, package: elixir}
+            {tool: shellcheck, package: shellcheck}
+        ] {
+            if $package.tool in $android_tools { print $package.package }
+        }
+        return
+    }
     let git_config = $home | path join ".gitconfig"
     let git_local = $home | path join ".gitconfig.local"
     let zoxide_init = $nu.data-dir | path join "zoxide.nu"
@@ -221,13 +268,53 @@ def main [
     }
     let vicinae_dir = $config_home | path join "vicinae"
     let vicinae_settings = $vicinae_dir | path join "settings.json"
-    if $nu.os-info.name in ["macos" "linux"] {
+    if $os in ["macos" "linux" "android"] {
         $links = ($links | append [
             {source: ($dots | path join ".vimrc"), destination: ($home | path join ".vimrc")}
-            {source: ($dots | path join "vicinae"), destination: ($vicinae_dir | path join "dots")}
             {source: ($dots | path join ".tmux.conf"), destination: ($home | path join ".tmux.conf")}
             {source: ($dots | path join "zellij" "config.kdl"), destination: ($config_home | path join "zellij" "config.kdl")}
         ])
+    }
+    if $os in ["macos" "linux"] {
+        $links = (
+            $links
+            | append {source: ($dots | path join "vicinae"), destination: ($vicinae_dir | path join "dots")}
+        )
+    }
+    if $android {
+        $links = ($links | append [
+            {source: ($dots | path join "termux" "config.android.toml"), destination: ($mise_dir | path join "config.android.toml")}
+            {source: ($dots | path join "termux" "jj-wrapper.sh"), destination: ($home | path join ".local" "bin" "jj")}
+            {source: ($dots | path join "termux" "agent-browser-wrapper.sh"), destination: ($home | path join ".local" "bin" "agent-browser")}
+        ])
+        # Preflight narrow native roots without exposing all Termux binaries.
+        for native in [
+            {tool: "nu", binary: "nu"}
+            {tool: "node", binary: "node"}
+            {tool: "node", binary: "npm"}
+            {tool: "node", binary: "npx"}
+            {tool: "shellcheck", binary: "shellcheck"}
+        ] {
+            if $native.tool not-in $android_tools { continue }
+            $links = ($links | append {
+                source: ($env.PREFIX | path join "bin" $native.binary)
+                destination: ($env.XDG_DATA_HOME | path join "dots" "pkg" $native.tool "bin" $native.binary)
+            })
+        }
+        # Register complete selected language roots, including native Go's
+        # Android compiler/runtime and future Java/BEAM opt-ins.
+        for native in [
+            {tool: "go", root: "lib/go"}
+            {tool: "java", root: "lib/jvm/java-25-openjdk"}
+            {tool: "erlang", root: "lib/erlang"}
+            {tool: "elixir", root: "opt/elixir"}
+        ] {
+            if $native.tool not-in $android_tools { continue }
+            $links = ($links | append {
+                source: ($env.PREFIX | path join $native.root)
+                destination: ($env.XDG_DATA_HOME | path join "dots" "pkg" $native.tool)
+            })
+        }
     }
     $links = ($links | each {|link|
         $link | insert backup (if $link.destination == $git_config {
@@ -256,7 +343,9 @@ def main [
         }
         print $"Will link: ($link.destination) -> ($link.source)"
     }
-    if $nu.os-info.name == "linux" {
+    if $android {
+        print "Termux prerequisites are assumed installed by install.android.sh."
+    } else if $os == "linux" {
         print "Linux prerequisites are assumed installed (including mise, Nu and build tools)."
     } else {
         print $"Will ensure mise is installed through ($manager)."
@@ -268,13 +357,16 @@ def main [
         | where options.os == $nu.os-info.name
         | get name
     )
-    if $nu.os-info.name != "linux" {
+    if $os in ["windows" "macos"] {
         print $"Will apply system packages: ($packages | str join ', ')"
         print "Will ensure compiler prerequisites, then install missing mise tools."
+    } else if $android {
+        print $"Android effective selection: ($android_tools | str join ', ')"
+        print "Will install selected mise tools only; other catalog entries remain disabled before version resolution."
     } else {
         print "Will install missing mise tools; no Linux system package installation."
     }
-    if $nu.os-info.name in ["macos" "linux"] {
+    if $os in ["macos" "linux"] {
         if ($vicinae_settings | path type) == null {
             print $"Will create local Vicinae settings importing tracked defaults: ($vicinae_settings)"
         } else {
@@ -283,7 +375,7 @@ def main [
     }
     print $"Will generate zoxide integration: ($zoxide_init)"
     print "Will install native fnox integration through secrets setup-shell (no credential enrollment)."
-    if $nu.os-info.name in ["macos" "linux"] { print "Will install WezTerm terminfo into ~/.terminfo." }
+    if $os in ["macos" "linux"] { print "Will install WezTerm terminfo into ~/.terminfo." }
     if $dry_run { return }
 
     if $nu.os-info.name == "windows" {
@@ -293,7 +385,7 @@ def main [
         symlink ($dots | path join "git" "ignore") $probe
         rm $probe
     }
-    if $nu.os-info.name != "linux" and (which mise | is-empty) {
+    if $os in ["windows" "macos"] and (which mise | is-empty) {
         if $nu.os-info.name == "windows" {
             do --capture-errors { ^winget install --id jdx.mise --exact --source winget --silent --accept-package-agreements --accept-source-agreements --disable-interactivity }
         } else {
@@ -325,12 +417,26 @@ def main [
                 do --capture-errors { ^brew install $"--($kind)" ...$missing }
             }
         }
-    } else if $nu.os-info.name != "linux" {
+    } else if $os in ["windows" "macos"] {
         do --capture-errors { ^mise --cd $dots bootstrap --only packages --yes }
     }
     refresh-system-path
-    if $nu.os-info.name != "linux" { ensure-compiler-prerequisites }
-    do --capture-errors { ^mise --cd $dots install --yes }
+    if $os in ["windows" "macos"] { ensure-compiler-prerequisites }
+    if $android {
+        # Connect the overlay and native roots before any mise resolution.
+        for link in ($links | where {|link|
+            $link.destination == ($mise_dir | path join "config.android.toml") or ($link.destination | str starts-with ($env.XDG_DATA_HOME | path join "dots" "pkg"))
+        }) {
+            connect-config $link.source $link.destination $link.backup
+        }
+        let effective = do --capture-errors { ^mise --cd $dots --env android settings get enable_tools } | from json
+        if $effective != $android_tools {
+            error make {msg: "Native mise selection differs from the Android overlay/local names. Stop before installation and review config precedence or MISE_ENABLE_TOOLS."}
+        }
+        do --capture-errors { ^mise --cd $dots --env android install --yes }
+    } else {
+        do --capture-errors { ^mise --cd $dots install --yes }
+    }
 
     let zoxide = do --capture-errors { ^mise --cd $dots which zoxide } | str trim
     let zoxide_script = (do --capture-errors { ^$zoxide init nushell })
@@ -342,7 +448,7 @@ def main [
     }
 
     # The GUI writes this file; only the defaults directory is linked to dots.
-    if $nu.os-info.name in ["macos" "linux"] and ($vicinae_settings | path type) == null {
+    if $os in ["macos" "linux"] and ($vicinae_settings | path type) == null {
         let imports = if $nu.os-info.name == "macos" {
             ["dots/settings.json" "dots/macos.json"]
         } else {
@@ -351,7 +457,7 @@ def main [
         {imports: $imports} | to json | save $vicinae_settings
     }
 
-    if $nu.os-info.name in ["macos" "linux"] {
+    if $os in ["macos" "linux"] {
         let terminfo = (mktemp --suffix .terminfo)
         try {
             http get --raw https://raw.githubusercontent.com/wezterm/wezterm/main/termwiz/data/wezterm.terminfo | save --force $terminfo

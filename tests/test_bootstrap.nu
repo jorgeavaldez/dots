@@ -1,5 +1,5 @@
-# Linux bootstrap integration coverage. Only mise install/which is substituted;
-# fnox, zoxide, symlinks, tic and the WezTerm terminfo download remain real.
+# Bootstrap integration coverage uses a mise shim; native selection is also
+# exercised separately. fnox, zoxide, symlinks and tic remain real.
 use std/assert
 use helpers.nu [
     child
@@ -38,13 +38,56 @@ def bootstrap [f: record, args: list<any> = []] {
     )
 }
 
+# Package layouts, not a blanket PREFIX root; sentinels need no native runtime.
+def native-prefix [f: record] {
+    let prefix = $f.root | path join native
+    for binary in [
+        bin/nu
+        bin/node
+        bin/npm
+        bin/npx
+        bin/shellcheck
+        lib/go/bin/go
+        lib/go/bin/gofmt
+        lib/jvm/java-25-openjdk/bin/java
+        lib/jvm/java-25-openjdk/bin/javac
+        lib/jvm/java-25-openjdk/bin/jar
+        lib/jvm/java-25-openjdk/bin/keytool
+        lib/erlang/bin/erl
+        lib/erlang/bin/erlc
+        lib/erlang/bin/escript
+        lib/erlang/bin/epmd
+        opt/elixir/bin/elixir
+        opt/elixir/bin/elixirc
+        opt/elixir/bin/iex
+        opt/elixir/bin/mix
+    ] { put ($prefix | path join $binary) 'native-sentinel' }
+    $prefix
+}
+
 def mock-mise-installs [f: record] {
     script $f mise '
 def main --wrapped [...args: string] {
+    let command = if ($args | first) == "--cd" { $args | skip 2 } else { $args }
+    let actual = if ($command | first) == "--env" { $command | skip 2 } else { $command }
+    if $actual == ["settings" "get" "enable_tools"] {
+        let dir = $env.MISE_CONFIG_DIR? | default ($env.XDG_CONFIG_HOME | path join mise)
+        let local = $dir | path join config.android.local.toml
+        let config = if ($local | path exists) { $local } else { $dir | path join config.android.toml }
+        print (open $config | get settings.enable_tools | sort | to json --raw)
+        return
+    }
     (($args | to json --raw) + "\n") | save --raw --append $env.MISE_CALLS
-    let actual = if ($args | first) == "--cd" { $args | skip 2 } else { $args }
-    if $actual == ["install" "--yes"] {
-        # MOCK: do not download/install the entire shared toolchain.
+    if ($actual | first) == "install" {
+        # MOCK: no toolchain download. Assert Android prerequisites are linked.
+        if $env.TERMUX_VERSION? != null {
+            if $actual != ["install" "--yes"] { error make {msg: "Selection must be owned by native mise settings"} }
+            if $env.MISE_AUTO_ENV != "1" { error make {msg: "Android overlay inactive"} }
+            if not (($env.MISE_CONFIG_DIR? | default ($env.XDG_CONFIG_HOME | path join mise) | path join "config.android.toml") | path exists) { error make {msg: "Overlay not linked before install"} }
+            for native in [nu/bin/nu node/bin/node node/bin/npm node/bin/npx] {
+                if not (($env.XDG_DATA_HOME | path join "dots/pkg" $native) | path exists) { error make {msg: "Native root missing"} }
+            }
+        } else if $actual != ["install" "--yes"] { error make {msg: "Desktop install changed"} }
         return
     }
     if ($actual | length) == 2 and $actual.0 == "which" and $actual.1 in ["fnox" "zoxide"] {
@@ -69,6 +112,7 @@ export def cases [] {
     [
         {
             name: test_linux_dry_run_does_not_check_or_install_system_packages
+            platform: linux
             run: {|fixture|
                 let f = bootstrap-fixture $fixture
                 let result = bootstrap $f ['--dry-run']
@@ -81,6 +125,7 @@ export def cases [] {
         }
         {
             name: test_linux_full_bootstrap_uses_real_integrations_and_terminfo
+            platform: linux
             run: {|fixture|
                 let f = mock-mise-installs (bootstrap-fixture $fixture)
                 ok (bootstrap $f)
@@ -99,6 +144,7 @@ export def cases [] {
         }
         {
             name: test_managed_files_backups_and_local_state_survive_rerun
+            platform: linux
             run: {|fixture|
                 let f = mock-mise-installs (bootstrap-fixture $fixture)
                 let ssh = $f.home | path join '.ssh'
@@ -152,6 +198,7 @@ export def cases [] {
         }
         {
             name: test_late_directory_conflict_stops_before_install_or_links
+            platform: linux
             run: {|fixture|
                 let f = mock-mise-installs (bootstrap-fixture $fixture)
                 mkdir ($f.config | path join 'zellij/config.kdl')
@@ -164,6 +211,7 @@ export def cases [] {
         }
         {
             name: test_git_backup_collision_stops_before_install
+            platform: linux
             run: {|fixture|
                 let f = mock-mise-installs (bootstrap-fixture $fixture)
                 for name in ['.gitconfig' '.gitconfig.local'] {
@@ -178,13 +226,14 @@ export def cases [] {
         }
         {
             name: test_dangling_links_are_backed_up_but_mutable_vicinae_is_preserved
+            platform: linux
             run: {|fixture|
                 let f = mock-mise-installs (bootstrap-fixture $fixture)
                 mkdir $f.config
                 let starship = $f.config | path join 'starship.toml'
                 ok (
                     child $f [
-                        '/usr/bin/ln'
+                        $f.tools.ln
                         '-s'
                         ($f.home | path join 'missing-starship')
                         $starship
@@ -194,7 +243,7 @@ export def cases [] {
                 mkdir ($settings | path dirname)
                 ok (
                     child $f [
-                        '/usr/bin/ln'
+                        $f.tools.ln
                         '-s'
                         ($f.home | path join 'missing-local-settings')
                         $settings
@@ -211,6 +260,7 @@ export def cases [] {
         }
         {
             name: test_explicit_config_overrides_are_respected
+            platform: linux
             run: {|fixture|
                 let base = mock-mise-installs (bootstrap-fixture $fixture)
                 let f = $base | update env ($base.env | merge {
@@ -232,19 +282,201 @@ export def cases [] {
             }
         }
         {
-            name: test_termux_is_rejected_before_changes
+            name: test_android_bootstrap_links_overlay_native_root_and_preserves_reruns
+            run: {|fixture|
+                let base = mock-mise-installs (bootstrap-fixture $fixture)
+                let prefix = native-prefix $base
+                rm ($prefix | path join bin/shellcheck)
+                let mise_dir = $base.home | path join custom-mise
+                let f = $base | update env (
+                    $base.env
+                    | merge {
+                        TERMUX_VERSION: 'test'
+                        PREFIX: $prefix
+                        MISE_CONFIG_DIR: $mise_dir
+                        # Use the retained seed for preflight on either host;
+                        # Linux cannot execute the linked Termux wrapper's shebang.
+                        PATH: ($"($base.home | path join .local/libexec):($base.env.PATH)")
+                    }
+                )
+                # The wrapper link remains real; its seed handles config queries.
+                script $f jj 'def --wrapped main [...args: string] { print ($env.XDG_CONFIG_HOME | path join jj/config.toml) }'
+                mkdir ($f.home | path join .local/libexec)
+                mv ($f.bin | path join jj) ($f.home | path join .local/libexec/jj)
+                let packages = bootstrap $f ['--android-packages']
+                ok $packages
+                assert equal ($packages.stdout | lines) [golang]
+                ok (bootstrap $f ['--dry-run'])
+                absent $mise_dir
+                ok (bootstrap $f)
+                link ($mise_dir | path join config.toml) ($f.repo | path join mise/config.toml)
+                link ($mise_dir | path join config.android.toml) ($f.repo | path join termux/config.android.toml)
+                link ($f.home | path join .local/bin/jj) ($f.repo | path join termux/jj-wrapper.sh)
+                link ($f.home | path join .local/bin/agent-browser) ($f.repo | path join termux/agent-browser-wrapper.sh)
+                link ($f.home | path join xdg-data/dots/pkg/nu/bin/nu) ($prefix | path join bin/nu)
+                for binary in [node npm npx] {
+                    link ($f.home | path join xdg-data/dots/pkg/node/bin $binary) ($prefix | path join bin $binary)
+                }
+                link ($f.home | path join xdg-data/dots/pkg/go) ($prefix | path join lib/go)
+                for tool in [java erlang elixir shellcheck] {
+                    absent ($f.home | path join xdg-data/dots/pkg $tool)
+                }
+                assert (($f.home | path join xdg-data/nushell/zoxide.nu) | path exists)
+                contains (
+                    open --raw ($f.home | path join xdg-data/nushell/vendor/autoload/fnox.nu)
+                ) 'fnox'
+                absent ($f.home | path join .terminfo)
+                absent ($f.config | path join vicinae)
+                ok (bootstrap $f)
+                assert equal (glob ($mise_dir | path join '*.before-dots-*')) []
+            }
+        }
+        {
+            name: test_android_overlay_conflict_stops_before_install
+            run: {|fixture|
+                let base = mock-mise-installs (bootstrap-fixture $fixture)
+                let prefix = native-prefix $base
+                let f = $base | update env ($base.env | merge {TERMUX_VERSION: 'test' PREFIX: $prefix})
+                for conflict in [
+                    ($f.config | path join mise/config.android.toml)
+                    ($f.home | path join xdg-data/dots/pkg/nu/bin/nu)
+                    ($f.home | path join xdg-data/dots/pkg/go)
+                ] {
+                    mkdir $conflict
+                    let result = bootstrap $f
+                    assert ($result.exit_code != 0)
+                    contains $result.stderr 'Config conflict'
+                    absent ($f.root | path join mise-calls)
+                    absent ($f.config | path join mise/config.toml)
+                    rm --recursive $conflict
+                }
+            }
+        }
+        {
+            name: test_android_explicit_overlay_disabling_overrides_fail_without_changes
             run: {|fixture|
                 let base = bootstrap-fixture $fixture
-                for marker in [
-                    {TERMUX_VERSION: '0.118.0'}
-                    {PREFIX: '/data/data/com.termux/files/usr'}
+                for override in [
+                    {
+                        MISE_GLOBAL_CONFIG_FILE: ($base.home | path join explicit.toml)
+                    }
+                    {MISE_AUTO_ENV: '0'}
                 ] {
-                    let f = $base | update env ($base.env | merge $marker)
+                    let f = $base | update env ($base.env | merge {TERMUX_VERSION: 'test'} | merge $override)
                     let result = bootstrap $f ['--dry-run']
-                    assert not ($result.exit_code == 0)
-                    contains $result.stderr 'Termux'
+                    assert ($result.exit_code != 0)
+                    contains $result.stderr 'override'
                     absent $f.config
                 }
+            }
+        }
+        {
+            name: test_android_missing_native_nu_stops_before_install
+            run: {|fixture|
+                let base = mock-mise-installs (bootstrap-fixture $fixture)
+                let prefix = native-prefix $base
+                rm ($prefix | path join bin/nu)
+                let f = $base | update env ($base.env | merge {TERMUX_VERSION: 'test' PREFIX: $prefix})
+                let result = bootstrap $f
+                assert ($result.exit_code != 0)
+                contains $result.stderr 'native/bin/nu'
+                absent ($f.root | path join mise-calls)
+                absent $f.config
+            }
+        }
+        {
+            name: test_android_missing_selected_native_source_stops_before_install
+            run: {|fixture|
+                let base = mock-mise-installs (bootstrap-fixture $fixture)
+                let prefix = native-prefix $base
+                let f = $base | update env ($base.env | merge {TERMUX_VERSION: 'test' PREFIX: $prefix})
+                put ($f.config | path join mise/config.android.local.toml) '[settings]
+enable_tools = ["nu", "node", "fnox", "age", "zoxide", "carapace", "java", "erlang", "elixir", "shellcheck"]
+'
+                for root in [lib/jvm/java-25-openjdk lib/erlang opt/elixir bin/shellcheck] {
+                    let source = $prefix | path join $root
+                    mv $source $"($source).saved"
+                    let result = bootstrap $f
+                    assert ($result.exit_code != 0)
+                    contains $result.stderr 'Missing source'
+                    absent ($f.root | path join mise-calls)
+                    absent ($f.config | path join mise/config.toml)
+                    mv $"($source).saved" $source
+                    ok (bootstrap $f ['--dry-run'])
+                }
+            }
+        }
+        {
+            name: test_android_local_selection_controls_native_packages_and_roots
+            run: {|fixture|
+                let base = mock-mise-installs (bootstrap-fixture $fixture)
+                let prefix = native-prefix $base
+                let f = $base | update env ($base.env | merge {TERMUX_VERSION: 'test' PREFIX: $prefix})
+                put ($f.config | path join mise/config.android.local.toml) '[settings]
+enable_tools = ["nu", "node", "fnox", "age", "zoxide", "carapace", "java", "shellcheck"]
+'
+                let packages = bootstrap $f ['--android-packages']
+                ok $packages
+                assert equal ($packages.stdout | lines) [openjdk-25 shellcheck]
+                rm --recursive ($prefix | path join lib/go) ($prefix | path join lib/erlang) ($prefix | path join opt/elixir)
+                ok (bootstrap $f)
+                link ($f.home | path join xdg-data/dots/pkg/java) ($prefix | path join lib/jvm/java-25-openjdk)
+                let shellcheck = $f.home | path join xdg-data/dots/pkg/shellcheck/bin/shellcheck
+                link $shellcheck ($prefix | path join bin/shellcheck)
+                ok (
+                    child $f [
+                        $f.tools.chmod
+                        '755'
+                        ($prefix | path join bin/shellcheck)
+                    ]
+                )
+                for tool in [go erlang elixir] { absent ($f.home | path join xdg-data/dots/pkg $tool) }
+                let project = $f.root | path join project
+                put ($project | path join mise.toml) (open --raw ($f.repo | path join mise/config.toml))
+                let selected = $f | update env ($f.env | merge {MISE_AUTO_ENV: '1'})
+                let effective = child $selected [
+                    $f.tools.mise
+                    --cd
+                    $project
+                    --env
+                    android
+                    settings
+                    get
+                    enable_tools
+                ]
+                ok $effective
+                assert equal ($effective.stdout | from json) [
+                    age
+                    carapace
+                    fnox
+                    java
+                    node
+                    nu
+                    shellcheck
+                    zoxide
+                ]
+                let executable = child $selected [
+                    $f.tools.mise
+                    --cd
+                    $f.root
+                    --env
+                    android
+                    which
+                    shellcheck
+                ]
+                ok $executable
+                assert equal ($executable.stdout | str trim) $shellcheck
+            }
+        }
+        {
+            name: test_android_detects_musl_prefix_and_reports_missing_native_seed
+            run: {|fixture|
+                let base = mock-mise-installs (bootstrap-fixture $fixture)
+                let f = $base | update env ($base.env | merge {PREFIX: '/missing/com.termux/files/usr'})
+                let result = bootstrap $f ['--dry-run']
+                assert ($result.exit_code != 0)
+                contains $result.stderr 'Missing source'
+                absent $f.config
             }
         }
     ]

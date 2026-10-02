@@ -11,8 +11,9 @@ Have mise, Nu and system prerequisites installed first, including the build
 requirements of the selected mise tools and `tic` for terminfo. The bootstrap
 does not detect Linux package managers, install system packages, or install
 mise on Linux. It does install the tools declared in the shared mise config.
-The WezTerm terminfo download needs network access. Termux is explicitly
-rejected; keep using `install.android.sh` there.
+The WezTerm terminfo download needs network access. Termux uses the same
+bootstrap with a native prerequisite seed and a small Android mise overlay;
+see [the Termux guide](../README.md#termux-on-android) for its bounded tool scope.
 
 Configuration follows `XDG_CONFIG_HOME` (default `~/.config`). Existing mise,
 Starship and Yazi overrides are respected. In addition to Nu, mise, Git,
@@ -81,3 +82,12 @@ tool paths, including age-keygen, and have `tic` available. Missing tools fail
 explicitly. See [the Nu test guide](test-nushell.md) for the full suite. These tests exercise the
 shared Linux path, not separate Arch/Debian virtual machines or native
 Windows/macOS execution.
+
+For focused Termux coverage with the same isolated fixtures, run
+`"$NU_BIN" --no-config-file tests/run.nu --filter android` with either native or
+musl Nu and the tool paths above. The socket fixture additionally needs `python3`;
+it binds/closes a synthetic Unix socket, never a real agent. Clipboard commands
+are test doubles, not Android API interactions. A musl Nu run of the full Linux
+suite on Termux fails DNS at its real terminfo download, as does a normal HTTPS
+`http get` in musl Nu 0.116.0. Android runtime therefore uses native pkg Nu,
+registered through mise's narrow path alias; native Nu's HTTP probe succeeds.

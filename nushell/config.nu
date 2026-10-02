@@ -1,11 +1,18 @@
-# Shared interactive config for Windows, macOS, and Linux.
+# Shared interactive config for Windows, macOS, Linux and Termux.
+const platform_module = path self | path expand | path dirname | path join "platform.nu"
+use $platform_module termux
 $env.config.show_banner = false
 $env.config.edit_mode = "vi"
+
+# Native Termux cannot lock plaintext history; SQLite uses supported locking.
+# Nu selects history.sqlite3 automatically and leaves history.txt untouched.
+if (termux) { $env.config.history.file_format = "sqlite" }
 
 # Native Carapace completions only: no Bash/Zsh/Fish completion bridges.
 # Keep all words when expanding aliases (for example dco -> docker compose).
 $env.config.completions.external.enable = true
-$env.config.completions.external.completer = {|spans|
+$env.config.completions.external.completer = {|place|
+    let spans = $place.command
     let expansion = scope aliases | where name == $spans.0 | get -o 0.expansion
     let words = if $expansion == null { [$spans.0] } else {
         $expansion | split row " "
@@ -21,10 +28,23 @@ $env.config.completions.external.completer = {|spans|
     } catch { null }
 }
 
-alias j = ^jj
-alias js = ^jj st
-alias jd = ^jj diff
-alias psh = ^jj git push
+# Mise activation may reorder PATH. Termux must always use the shared-storage
+# wrapper, even if a project activates another jj version.
+def --wrapped jj [...args: string] {
+    let input = $in
+    let executable = if (termux) {
+        $nu.home-dir | path join ".local" "bin" "jj"
+    } else { "jj" }
+    if $input == null {
+        ^$executable ...$args
+    } else {
+        $input | ^$executable ...$args
+    }
+}
+alias j = jj
+alias js = jj st
+alias jd = jj diff
+alias psh = jj git push
 alias n = ^nvim
 alias e = ^nvim
 alias c = clear
@@ -63,16 +83,16 @@ def --env proj [] {
 def commit [message?: string] {
     let piped = $in
     if $message != null {
-        ^jj commit --message $message
+        jj commit --message $message
     } else if $piped != null {
-        ^jj commit --message ($piped | into string)
+        jj commit --message ($piped | into string)
     } else {
-        ^jj commit
+        jj commit
     }
 }
 
 def bump [] {
-    let result = (^jj currbm-name | complete)
+    let result = jj currbm-name | complete
     if $result.exit_code != 0 {
         error make {
             msg: ($result.stderr | str trim)
@@ -82,13 +102,16 @@ def bump [] {
     if ($bookmarks | length) != 1 {
         error make {msg: "bump requires exactly one current bookmark."}
     }
-    ^jj bookmark move $bookmarks.0 --to @-
+    jj bookmark move $bookmarks.0 --to @-
 }
 
 # Use OS clipboard APIs, not clip.exe's legacy code-page conversion.
 def pbcopy []: string -> nothing {
     let text = $in
-    match $nu.os-info.name {
+    match (if (termux) { "android" } else { $nu.os-info.name }) {
+        "android" => {
+            $text | ^termux-clipboard-set
+        }
         "macos" => {
             $text | ^/usr/bin/pbcopy
         }
@@ -121,7 +144,10 @@ def pbpaste []: nothing -> string {
 
     # Capture stdout explicitly: Nu trims a trailing newline when collecting
     # an external byte stream into a variable or subexpression.
-    let result = match $nu.os-info.name {
+    let result = match (if (termux) { "android" } else { $nu.os-info.name }) {
+        "android" => {
+            ^termux-clipboard-get | complete
+        }
         "macos" => {
             ^/usr/bin/pbpaste | complete
         }

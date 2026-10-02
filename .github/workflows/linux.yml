@@ -16,14 +16,22 @@ jobs:
       matrix:
         include:
           - image: debian:bookworm
-            seed: apt-get update && apt-get install -y ca-certificates curl git build-essential xz-utils ncurses-bin
+            seed: apt-get update && apt-get install -y ca-certificates curl git build-essential xz-utils ncurses-bin python3 proot
           - image: archlinux:base-devel
-            seed: pacman -Syu --noconfirm --needed ca-certificates curl git base-devel xz ncurses
+            seed: pacman -Syu --noconfirm --needed ca-certificates curl git base-devel xz ncurses python talloc uthash
     container: ${{ matrix.image }}
     steps:
       # Disposable CI images need provisioning. Bootstrap itself never does this.
       - name: Seed test container
         run: ${{ matrix.seed }}
+      # PRoot is not in Arch's official repositories; build only the test tool.
+      - name: Install PRoot on Arch
+        if: matrix.image == 'archlinux:base-devel'
+        run: |
+          curl --fail --location https://github.com/proot-me/proot/archive/refs/tags/v5.4.0.tar.gz -o "$RUNNER_TEMP/proot.tar.gz"
+          tar -xzf "$RUNNER_TEMP/proot.tar.gz" -C "$RUNNER_TEMP"
+          make -C "$RUNNER_TEMP/proot-5.4.0/src" proot
+          make -C "$RUNNER_TEMP/proot-5.4.0/src" install
       - uses: actions/checkout@v4
       - uses: jdx/mise-action@v3
         with:
@@ -31,13 +39,13 @@ jobs:
           cache: false
       - name: Install test and lint tools only
         run: |
-          mise install nu@0.115.1 fnox@1.35.2 age@1.3.2 shfmt@3.14.1 zoxide@0.10.0 rust@1.95.0
+          mise install nu@0.116.0 fnox@1.35.2 age@1.3.2 shfmt@3.14.1 zoxide@0.10.0 rust@1.95.0
           # nufmt has no published releases: pin the upstream source revision.
           mise exec rust@1.95.0 -- cargo install --locked --git https://github.com/nushell/nufmt --rev 24023665d1c2661addb22dce384b53d4a839727f --root "$RUNNER_TEMP/nufmt"
       - name: Run isolated Linux tests
         shell: bash
         run: |
-          export NU_BIN="$(mise exec nu@0.115.1 -- which nu)"
+          export NU_BIN="$(mise exec nu@0.116.0 -- which nu)"
           export FNOX_BIN="$(mise exec fnox@1.35.2 -- which fnox)"
           export ZOXIDE_BIN="$(mise exec zoxide@0.10.0 -- which zoxide)"
           export AGE_KEYGEN_BIN="$(mise exec age@1.3.2 -- which age-keygen)"
@@ -53,5 +61,5 @@ jobs:
         run: |
           export PATH="$RUNNER_TEMP/nufmt/bin:$PATH"
           export TMPDIR="$RUNNER_TEMP"
-          mise exec nu@0.115.1 shfmt@3.14.1 zoxide@0.10.0 -- make lint
-          mise exec nu@0.115.1 zoxide@0.10.0 -- nu --no-config-file tests/nu-lint.nu
+          mise exec nu@0.116.0 shfmt@3.14.1 zoxide@0.10.0 -- make lint
+          mise exec nu@0.116.0 zoxide@0.10.0 -- nu --no-config-file tests/nu-lint.nu

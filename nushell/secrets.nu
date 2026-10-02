@@ -1,9 +1,11 @@
 # Device enrollment and global cache refresh; fnox's native hook owns loading.
 const dots = path self | path expand | path dirname | path dirname
+use platform.nu [termux android-mise]
 
 # Explicit setup/refresh only, never shell startup: mise lookups are expensive.
 # Resolve the shared tool versions independently of the current project.
-def installed-tool [name: string] {
+def --env installed-tool [name: string] {
+    android-mise
     let result = (^mise --cd $dots which $name | complete)
     if $result.exit_code != 0 {
         error make {msg: $"Install ($name) with bootstrap.nu before using secrets."}
@@ -19,15 +21,20 @@ def sources-path [] {
     config-path | path dirname | path join "sources.toml"
 }
 
-# Create a private, empty reference map without enrolling a device or fetching keys.
+# Create the private source map; enrolled devices also get local age storage.
+# Never fetch secrets or replace existing entries/providers.
 export def init [] {
     let sources = (sources-path)
     if not ($sources | path exists) {
         mkdir ($sources | path dirname)
-        if $nu.os-info.name == "linux" {
+        if $nu.os-info.name == "linux" or (termux) {
             do --capture-errors { ^chmod 700 ($sources | path dirname) }
         }
-        '# Private source map. Keep this file outside dots.
+        '# Private source of truth. Keep this file outside dots.
+# After secrets setup: secrets local KEY (hidden paste), or pipe a value into it.
+# Local keys are encrypted with source-age using the enrolled device identity.
+# Run secrets refresh after changes to rebuild config.toml for shell loading.
+# Delete a [secrets] entry and refresh to remove it from the cache.
 [providers.onepassword]
 type = "1password"
 
@@ -36,13 +43,48 @@ type = "1password"
 # Non-sensitive, device-specific values can be stored here as plaintext defaults.
 # HOMELAB_URL = { default = "https://example.invalid" }
 ' | save $sources
-        if $nu.os-info.name == "linux" {
+        if $nu.os-info.name == "linux" or (termux) {
             do --capture-errors { ^chmod 600 $sources }
         }
         print $"Created empty secrets template: ($sources)"
     } else {
         print $"Existing secrets references preserved: ($sources)"
     }
+    let config = (config-path)
+    if ($config | path exists) {
+        let provider = (open $config).providers?.dots-age?
+        if $provider != null and (open $sources).providers?.source-age? == null {
+            # Append instead of rewriting the user's references and comments.
+            if $nu.os-info.name == "linux" or (termux) {
+                do --capture-errors { ^chmod 600 $sources }
+            }
+            "\n# Encrypted local source; shares the enrolled device identity.\n" + ({
+                providers: {source-age: $provider}
+            } | to toml)
+            | save --append $sources
+        }
+    }
+}
+
+# Store in the authoritative source map, never directly in the derived cache.
+# No value argument: stdin or fnox's hidden prompt keeps keys out of argv/history.
+export def local [name: string]: nothing -> nothing, string -> nothing {
+    let value = $in
+    if $name == "DOTS_AGE_IDENTITY" {
+        error make {msg: "DOTS_AGE_IDENTITY is reserved for the device key."}
+    }
+    let config = (config-path)
+    if not ($config | path exists) { error make {msg: "Run secrets setup first."} }
+    if (open $config).providers?.dots-age? == null { error make {msg: "Run secrets setup first."} }
+    init
+    let sources = (sources-path)
+    let fnox = (installed-tool fnox)
+    if $value == null {
+        ^$fnox --config $sources --profile default --no-daemon set $name --provider source-age
+    } else {
+        $value | ^$fnox --config $sources --profile default --no-daemon set $name --provider source-age
+    }
+    print $"Stored ($name) in sources.toml. Run secrets refresh to update the shell cache."
 }
 
 # Bootstrap and post-upgrade setup share this owner; no secrets are resolved.
@@ -55,7 +97,7 @@ export def setup-shell [] {
     print $"Installed native fnox integration: ($target). Open a new Nu shell to use it."
 }
 
-# Linux uses a private file, not a desktop keychain or an SSH agent.
+# Linux and Termux use a private file, not a desktop keychain or an SSH agent.
 def setup-linux [identity_file] {
     let directory = config-path | path dirname
     mkdir $directory
@@ -94,6 +136,7 @@ def setup-linux-locked [identity_file] {
         if ($checked.stdout | str trim) not-in $local.providers.dots-age.recipients {
             error make {msg: "Existing identity does not match the configured recipient. Nothing was replaced."}
         }
+        init
         print "Secrets device already configured; identity and cache preserved."
         return
     }
@@ -141,20 +184,19 @@ def setup-linux-locked [identity_file] {
     }
     rm --recursive --force $pending
     init
-    print "Secrets device configured with a private age file. Use fnox set --global --provider dots-age, or configure sources and refresh."
+    print "Secrets device configured with a private age file. Use secrets local KEY or add provider references, then secrets refresh."
 }
 
 # One-time enrollment; never replace an existing device identity.
 export def setup [--identity: path] {
-    if $nu.os-info.name == "linux" {
+    if $nu.os-info.name == "linux" or (termux) {
         setup-linux $identity
         return
     }
-    if $identity != null { error make {msg: "File identity import is Linux-only; native credential storage is unchanged."} }
+    if $identity != null { error make {msg: "File identity import is Linux/Termux-only; native credential storage is unchanged."} }
     if $nu.os-info.name not-in ["windows" "macos"] {
         error make {msg: "Secrets setup currently supports Windows and macOS only."}
     }
-    init
     let config = (config-path)
     let fnox = (installed-tool fnox)
     if ($config | path exists) {
@@ -169,6 +211,7 @@ export def setup [--identity: path] {
         if $identity.exit_code != 0 {
             error make {msg: "The existing device identity could not be read from the OS credential store. It was not replaced."}
         }
+        init
         print "Secrets device already configured; identity and cache preserved. Run secrets refresh to sync."
         return
     }
@@ -214,13 +257,14 @@ export def setup [--identity: path] {
         rm --force $pending
         error make {msg: $err.msg}
     }
-    print $"Secrets device configured. Add references to (sources-path), then run secrets refresh."
+    init
+    print $"Secrets device configured. Use secrets local KEY or add references to (sources-path), then run secrets refresh."
 }
 
 # Refresh the global cache; the native hook reloads it at the next prompt.
 export def refresh [] {
-    if $nu.os-info.name not-in ["windows" "macos" "linux"] {
-        error make {msg: "Secrets refresh supports Windows, macOS, and Linux."}
+    if $nu.os-info.name not-in ["windows" "macos" "linux"] and not (termux) {
+        error make {msg: "Secrets refresh supports Windows, macOS, Linux and Termux."}
     }
 
     let config = (config-path)
@@ -252,7 +296,7 @@ export def refresh [] {
     let pending = $staging | path join "config.toml"
     mkdir $staging
     try {
-        if $nu.os-info.name == "linux" {
+        if $nu.os-info.name == "linux" or (termux) {
             do --capture-errors { ^chmod 700 $staging }
         }
         cp $config $pending
@@ -296,7 +340,7 @@ export def refresh [] {
             )
         }
         $updated | update secrets ($cache | reject ...$removed) | to toml | save --force $pending
-        if $nu.os-info.name == "linux" {
+        if $nu.os-info.name == "linux" or (termux) {
             do --capture-errors { ^chmod 600 $pending }
         }
         mv --force $pending $config

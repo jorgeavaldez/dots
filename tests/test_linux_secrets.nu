@@ -26,7 +26,11 @@ def secret-fixture [base: record] {
 def discovery [f: record, tools: record] {
     let encoded = $tools | to json -r | to nuon
     script $f mise (
-        'def --wrapped main [...args: string] { let tools = (@TOOLS@ | from json); print ($tools | get ($args | last)) }'
+        'def --wrapped main [...args: string] {
+            if $env.TERMUX_VERSION? != null and $env.MISE_AUTO_ENV? != "1" { error make {msg: "Android overlay missing during explicit tool resolution"} }
+            let tools = @TOOLS@ | from json
+            print ($tools | get ($args | last))
+        }'
         | str replace '@TOOLS@' $encoded
     )
 }
@@ -61,8 +65,8 @@ def fail-chmod [f: record, target: string, --substring] {
     let operator = if $substring { 'contains' } else { 'ends-with' }
     script $f chmod ('def --wrapped main [...args: string] {
     if ($args | last | str @OPERATOR@ @TARGET@) { exit 73 }
-    exec /usr/bin/chmod ...$args
-}' | str replace '@OPERATOR@' $operator | str replace '@TARGET@' ($target | to nuon))
+    exec @CHMOD@ ...$args
+}' | str replace '@CHMOD@' ($f.tools.chmod | to nuon) | str replace '@OPERATOR@' $operator | str replace '@TARGET@' ($target | to nuon))
 }
 
 # A background job transports a complete result, including unexpected Nu errors.
@@ -123,6 +127,104 @@ def concurrent [f: record] {
 
 export def cases [] {
     [
+        {
+            name: test_android_enrollment_refresh_and_hook_use_private_files
+            run: {|base|
+                let f = secret-fixture ($base | update env ($base.env | merge {TERMUX_VERSION: 'test'}))
+                secrets $f 'secrets setup; secrets setup-shell' | ignore
+                let sources = $f.config | path dirname | path join sources.toml
+                put $sources '[secrets]
+ANDROID_TEST = { default = "synthetic-android" }
+'
+                secrets $f 'secrets refresh' | ignore
+                mode $f.config '600'
+                mode (key $f) '600'
+                mode ($f.config | path dirname) '700'
+                let before = snapshot $f
+                secrets $f 'secrets setup' | ignore
+                assert equal (snapshot $f) $before
+                let hook = $f.home | path join '.local/share/nushell/vendor/autoload/fnox.nu'
+                secrets $f $'source ($hook | to nuon); if $env.ANDROID_TEST? != "synthetic-android" { error make {msg: "Android hook did not load"} }' | ignore
+                lacks (open --raw $f.config) synthetic-android
+                op-absent $f
+            }
+        }
+        {
+            name: test_local_encrypted_sources_refresh_without_op
+            run: {|base|
+                for overlay in [
+                    {}
+                    {TERMUX_VERSION: 'test'}
+                ] {
+                    let f = secret-fixture ($base | update env ($base.env | merge $overlay))
+                    secrets $f 'secrets setup' | ignore
+                    let sources = $f.config | path dirname | path join sources.toml
+                    assert equal (open $sources).providers.source-age (open $f.config).providers.dots-age
+                    let before = open --raw $f.config
+                    let result = secrets $f '"synthetic-local" | secrets local LOCAL_KEY'
+                    lacks ($result.stdout + $result.stderr) synthetic-local
+                    assert equal (open --raw $f.config) $before
+                    assert equal (open $sources).secrets.LOCAL_KEY.provider source-age
+                    lacks (open --raw $sources) synthetic-local
+                    mode $sources '600'
+                    let settings = open $sources
+                    $settings | upsert secrets.VAULT_PATH {default: '/synthetic/vault'} | to toml | save --force $sources
+                    secrets $f 'secrets refresh' | ignore
+                    assert equal ((fnox $f [get LOCAL_KEY]).stdout | str trim) synthetic-local
+                    assert equal ((fnox $f [get VAULT_PATH]).stdout | str trim) /synthetic/vault
+                    secrets $f '"synthetic-rotated" | secrets local LOCAL_KEY; secrets refresh' | ignore
+                    assert equal ((fnox $f [get LOCAL_KEY]).stdout | str trim) synthetic-rotated
+                    lacks (open --raw $sources) synthetic-rotated
+                    lacks (open --raw $f.config) synthetic-rotated
+                    open $sources | reject secrets.LOCAL_KEY | to toml | save --force $sources
+                    secrets $f 'secrets refresh' | ignore
+                    assert not ('LOCAL_KEY' in ((open $f.config).secrets | columns))
+                    op-absent $f
+                }
+            }
+        }
+        {
+            name: test_setup_adds_local_provider_without_replacing_source_entries
+            run: {|base|
+                let f = secret-fixture $base
+                secrets $f 'secrets setup' | ignore
+                let sources = $f.config | path dirname | path join sources.toml
+                put $sources '# Keep my comments and defaults.
+[secrets]
+VAULT_PATH = { default = "/synthetic/vault" }
+'
+                let before = snapshot $f
+                secrets $f 'secrets setup' | ignore
+                assert equal (snapshot $f) $before
+                contains (open --raw $sources) '# Keep my comments and defaults.'
+                assert equal (open $sources).secrets.VAULT_PATH.default /synthetic/vault
+                assert equal (open $sources).providers.source-age (open $f.config).providers.dots-age
+                let enrolled = open --raw $sources
+                secrets $f 'secrets setup; secrets init' | ignore
+                assert equal (open --raw $sources) $enrolled
+                op-absent $f
+            }
+        }
+        {
+            name: test_local_requires_enrollment_rejects_identity_and_propagates_fnox_failure
+            run: {|base|
+                let f = secret-fixture $base
+                secrets $f '"synthetic-local" | secrets local LOCAL_KEY' --fail | ignore
+                absent ($f.config | path dirname)
+                secrets $f 'secrets setup' | ignore
+                let sources = $f.config | path dirname | path join sources.toml
+                let before = open --raw $sources
+                secrets $f '"synthetic-local" | secrets local DOTS_AGE_IDENTITY' --fail | ignore
+                assert equal (open --raw $sources) $before
+                script $f failing-fnox 'def --wrapped main [...args: string] { exit 73 }'
+                discovery $f ($f.tools | update fnox ($f.bin | path join failing-fnox))
+                let result = secrets $f '"synthetic-local" | secrets local LOCAL_KEY' --fail
+                assert equal $result.exit_code 73
+                lacks $result.stdout 'Stored LOCAL_KEY'
+                assert equal (open --raw $sources) $before
+                op-absent $f
+            }
+        }
         {
             name: test_concurrent_setup_rejects_contender_and_preserves_winner
             run: {|base| concurrent (secret-fixture $base) }
@@ -222,7 +324,7 @@ export def cases [] {
                     fnox $f [
                         exec
                         --
-                        /bin/sh
+                        $f.tools.sh
                         -c
                         'test "$TEST_DOTS_SECRET" = synthetic-test-only'
                     ]

@@ -1,0 +1,63 @@
+# Android selection and backend adaptation; all requested versions stay in config.toml.
+# Device opt-ins belong in adjacent config.android.local.toml (names only).
+[settings]
+enable_tools = ["nu", "node", "fnox", "age", "zoxide", "carapace", "go", "zig"]
+# Native path aliases use installed Termux versions, not desktop "latest".
+[tool_alias.nu]
+backend = "github:nushell/nushell"
+
+# Musl Nu's DNS fails in Termux. Register the networking-capable native runtime.
+[tool_alias.nu.versions]
+latest = "path:{{ env.XDG_DATA_HOME }}/dots/pkg/nu"
+
+[tool_alias.fnox]
+backend = "github:jdx/fnox"
+
+[tool_alias.age]
+backend = "github:FiloSottile/age"
+
+[tool_alias.zoxide]
+backend = "github:ajeetdsouza/zoxide"
+
+[tool_alias.carapace]
+backend = "github:carapace-sh/carapace-bin"
+
+# Native Node/npm are prerequisites. Never expose all of $PREFIX as a tool root.
+[tool_alias.node.versions]
+latest = "path:{{ env.XDG_DATA_HOME }}/dots/pkg/node"
+
+# Upstream Go defaults to Linux: pure-Go DNS and default cgo fail on Android.
+# Keep native Android host/target defaults and networking, registered through mise.
+[tool_alias.go.versions]
+latest = "path:{{ env.XDG_DATA_HOME }}/dots/pkg/go"
+
+# Upstream ShellCheck v0.11.0 hits Android seccomp at set_robust_list (SIGSYS).
+# Register the optional native package through its dedicated tool root.
+[tool_alias.shellcheck]
+backend = "github:koalaman/shellcheck"
+
+[tool_alias.shellcheck.versions]
+latest = "path:{{ env.XDG_DATA_HOME }}/dots/pkg/shellcheck"
+
+# Java's Android metadata returns 404; Erlang's default artifacts target Ubuntu.
+# Audited native packages: openjdk-25 25.0.4, Erlang 29.1.1, Elixir 1.20.4
+# (compiled with OTP 29). Package upgrades own native patch versions.
+# Mise's Java backend exports JAVA_HOME from this complete JDK root.
+[tool_alias.java.versions]
+latest = "path:{{ env.XDG_DATA_HOME }}/dots/pkg/java"
+
+[tool_alias.erlang.versions]
+latest = "path:{{ env.XDG_DATA_HOME }}/dots/pkg/erlang"
+
+[tool_alias.elixir.versions]
+latest = "path:{{ env.XDG_DATA_HOME }}/dots/pkg/elixir"
+
+# Mix compilation locking requires hard links, denied in native Termux.
+# Use Mix's supported opt-out; serialize builds sharing a build directory.
+[env]
+MIX_OS_CONCURRENCY_LOCK = "0"
+
+# Approved Termux workaround: TLS stays verified, but aube's additional
+# trust-downgrade check is bypassed. See README's Termux section.
+[settings.npm]
+shell_out = true
