@@ -1,7 +1,7 @@
 # Linux and Termux integration tests in Nushell
 
-Run the sequential suite with Nu and its bundled `std/assert` (CI pins 0.115.1;
-native Termux currently uses 0.116.0):
+Run the sequential suite with Nu and its bundled `std/assert` (CI and native
+Termux use 0.116.0):
 
 ```sh
 "$NU_BIN" --no-config-file tests/run.nu

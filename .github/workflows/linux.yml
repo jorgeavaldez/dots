@@ -39,13 +39,13 @@ jobs:
           cache: false
       - name: Install test and lint tools only
         run: |
-          mise install nu@0.115.1 fnox@1.35.2 age@1.3.2 shfmt@3.14.1 zoxide@0.10.0 rust@1.95.0
+          mise install nu@0.116.0 fnox@1.35.2 age@1.3.2 shfmt@3.14.1 zoxide@0.10.0 rust@1.95.0
           # nufmt has no published releases: pin the upstream source revision.
           mise exec rust@1.95.0 -- cargo install --locked --git https://github.com/nushell/nufmt --rev 24023665d1c2661addb22dce384b53d4a839727f --root "$RUNNER_TEMP/nufmt"
       - name: Run isolated Linux tests
         shell: bash
         run: |
-          export NU_BIN="$(mise exec nu@0.115.1 -- which nu)"
+          export NU_BIN="$(mise exec nu@0.116.0 -- which nu)"
           export FNOX_BIN="$(mise exec fnox@1.35.2 -- which fnox)"
           export ZOXIDE_BIN="$(mise exec zoxide@0.10.0 -- which zoxide)"
           export AGE_KEYGEN_BIN="$(mise exec age@1.3.2 -- which age-keygen)"
@@ -61,5 +61,5 @@ jobs:
         run: |
           export PATH="$RUNNER_TEMP/nufmt/bin:$PATH"
           export TMPDIR="$RUNNER_TEMP"
-          mise exec nu@0.115.1 shfmt@3.14.1 zoxide@0.10.0 -- make lint
-          mise exec nu@0.115.1 zoxide@0.10.0 -- nu --no-config-file tests/nu-lint.nu
+          mise exec nu@0.116.0 shfmt@3.14.1 zoxide@0.10.0 -- make lint
+          mise exec nu@0.116.0 zoxide@0.10.0 -- nu --no-config-file tests/nu-lint.nu

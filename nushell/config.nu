@@ -11,7 +11,8 @@ if (termux) { $env.config.history.file_format = "sqlite" }
 # Native Carapace completions only: no Bash/Zsh/Fish completion bridges.
 # Keep all words when expanding aliases (for example dco -> docker compose).
 $env.config.completions.external.enable = true
-$env.config.completions.external.completer = {|spans|
+$env.config.completions.external.completer = {|place|
+    let spans = $place.command
     let expansion = scope aliases | where name == $spans.0 | get -o 0.expansion
     let words = if $expansion == null { [$spans.0] } else {
         $expansion | split row " "
