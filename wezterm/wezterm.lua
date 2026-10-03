@@ -33,8 +33,6 @@ else
 	config.color_scheme = "Catppuccin Latte"
 end
 
-config.term = "wezterm"
-
 config.set_environment_variables.WEZTERM_APPEARANCE = is_dark and "dark" or "light"
 
 config.font = wezterm.font("JetBrains Mono")
