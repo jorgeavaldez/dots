@@ -4,9 +4,9 @@ use $platform_module termux
 $env.config.show_banner = false
 $env.config.edit_mode = "vi"
 
-# Native Termux cannot lock plaintext history; SQLite uses supported locking.
+# SQLite keeps command metadata and supports concurrent shell sessions.
 # Nu selects history.sqlite3 automatically and leaves history.txt untouched.
-if (termux) { $env.config.history.file_format = "sqlite" }
+$env.config.history.file_format = "sqlite"
 
 # Native Carapace completions only: no Bash/Zsh/Fish completion bridges.
 # Keep all words when expanding aliases (for example dco -> docker compose).
