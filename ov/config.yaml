@@ -8,4 +8,12 @@ KeyBind:
     - Up
     - ctrl+p
     - k
+  top:
+    - Home
+    - g
+  bottom:
+    - End
+    - G
+  goto: []
+  line_number_mode: []
   jump_target: []
