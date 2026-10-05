@@ -82,8 +82,12 @@ twg = { version = "latest", bin = "twg", checksum_url = "https://teamwork-graph.
 bat = "latest"
 "github:noborus/ov" = "latest"
 "aqua:LuaLS/lua-language-server" = "latest"
+"github:1broseidon/ketch" = { version = "0.19.0" }
 "go:golang.org/x/tools/gopls" = "latest"
 golangci-lint = "latest"
+cargo-binstall = "latest"
+"cargo:oyui" = "latest"
+jjui = "latest"
 
 # Windows binaries from LuaBinaries, linked by https://www.lua.org/download.html.
 # SHA-256 pins the trusted first download, not a signature from the Lua authors.
