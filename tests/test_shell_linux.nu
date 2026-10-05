@@ -81,6 +81,31 @@ export def cases [] {
                     | from json
                 ) "synthetic stdin\n"
                 assert equal $state.shell $state.exe
+
+                script $f carapace 'def --wrapped main [...args: string] {
+                    if $env.CARAPACE_BRIDGES != "" { error make {msg: "Completion bridges must remain disabled"} }
+                    [{value: ($args | to json -r)}] | to json -r | print
+                }'
+                let completions = (
+                    interactive $f '["jj " "j " "js --" "jd --" "psh --" "gh "] | each {|line|
+                        $line | commandline complete --detailed | get 0.value | from json
+                    } | to json -r'
+                ).stdout | from json
+                assert equal $completions [
+                    [jj nushell jj ""]
+                    [jj nushell jj ""]
+                    [jj nushell jj st --]
+                    [jj nushell jj diff --]
+                    [
+                        jj
+                        nushell
+                        jj
+                        git
+                        push
+                        --
+                    ]
+                    [gh nushell gh ""]
+                ]
             }
         }
         {

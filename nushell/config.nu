@@ -11,8 +11,7 @@ $env.config.history.file_format = "sqlite"
 # Native Carapace completions only: no Bash/Zsh/Fish completion bridges.
 # Keep all words when expanding aliases (for example dco -> docker compose).
 $env.config.completions.external.enable = true
-$env.config.completions.external.completer = {|place|
-    let spans = $place.command
+$env.config.completions.external.completer = {|spans|
     let expansion = scope aliases | where name == $spans.0 | get -o 0.expansion
     let words = if $expansion == null { [$spans.0] } else {
         $expansion | split row " "
@@ -30,6 +29,7 @@ $env.config.completions.external.completer = {|place|
 
 # Mise activation may reorder PATH. Termux must always use the shared-storage
 # wrapper, even if a project activates another jj version.
+@complete external
 def --wrapped jj [...args: string] {
     let input = $in
     let executable = if (termux) {
