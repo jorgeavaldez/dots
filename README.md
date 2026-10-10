@@ -428,24 +428,18 @@ previews shared bootstrap without package/network changes. There is no destructi
 `mise/config.toml` remains the unchanged canonical tool/version catalog. The
 `termux/config.android.toml` overlay is installed as
 `$MISE_CONFIG_DIR/config.android.toml` (default `~/.config/mise`). Its native
-`settings.enable_tools` allowlist defaults to **nu, node, fnox, age, zoxide,
-carapace, go and zig**. Mise filters unselected global and project declarations
+`settings.enable_tools` allowlist selects **nu, node, fnox, age, zoxide,
+carapace, go, zig, shellcheck and ketch**. Mise filters unselected global and project declarations
 before version/metadata resolution, including GitHub Pi and Cargo nufmt. Native
 Pi and the compiled `~/.local/bin/nufmt` remain independent exceptions.
 
-Opt in or out by creating the **device-local**, untracked
-`~/.config/mise/config.android.local.toml` (or under your `MISE_CONFIG_DIR`):
-
-```toml
-[settings]
-enable_tools = ["nu", "node", "fnox", "age", "zoxide", "carapace", "go", "zig", "java"]
-```
-
-This replaces the selection, not versions. Keep the six core integration names;
-setup rejects removing them or selecting shared Pi/nufmt. The local file may
-only contain `settings.enable_tools`. Rerun the installer after changing native
-tool opt-ins. The overlay lives under `termux/` so mise does not rediscover
-it as a project default in this checkout and override device-local settings.
+This shared list is the only Android selection: opt tools in or out by editing
+it (names only; versions stay in `mise/config.toml`), then rerun the installer.
+Keep the six core integration names; setup rejects removing them or selecting
+shared Pi/nufmt. There is no device-local selection file; setup stops if a
+leftover `config.android.local.toml` or `MISE_ENABLE_TOOLS` changes mise's
+effective selection. The overlay lives under `termux/` so mise does not
+rediscover it as a project default in this checkout.
 Bootstrap checks native effective selection before installation; it neither
 creates a second catalog nor looks up selection/tool paths during startup.
 Android uses native `less -FRX` rather than an unselected ov. Starship quietly
@@ -461,11 +455,11 @@ three symlinks in `$XDG_DATA_HOME/dots/pkg/node/bin`, never the whole `$PREFIX`
 also recognizes Termux's environment markers. npm tools remain mise-managed,
 except the existing native Pi distribution.
 
-**ShellCheck is an optional native pkg exception.** Aqua requests an
+**ShellCheck is a native pkg exception.** Aqua requests an
 Android-named archive that upstream does not publish; upstream v0.11.0's static
 Linux ARM64 binary is killed by Android seccomp at `set_robust_list` (`SIGSYS`)
-on the audited device. Add `shellcheck` to the device-local `enable_tools` list
-and rerun the installer. It installs the native `shellcheck` package, and
+on the audited device. When `shellcheck` is selected, the installer installs the
+native `shellcheck` package, and
 bootstrap registers only `$PREFIX/bin/shellcheck` through
 `$XDG_DATA_HOME/dots/pkg/shellcheck/bin/shellcheck`. Mise selects this dedicated
 root; Termux package upgrades own its version. The compatibility mapping lives

@@ -72,9 +72,7 @@ def main --wrapped [...args: string] {
     let actual = if ($command | first) == "--env" { $command | skip 2 } else { $command }
     if $actual == ["settings" "get" "enable_tools"] {
         let dir = $env.MISE_CONFIG_DIR? | default ($env.XDG_CONFIG_HOME | path join mise)
-        let local = $dir | path join config.android.local.toml
-        let config = if ($local | path exists) { $local } else { $dir | path join config.android.toml }
-        print (open $config | get settings.enable_tools | sort | to json --raw)
+        print (open ($dir | path join config.android.toml) | get settings.enable_tools | sort | to json --raw)
         return
     }
     (($args | to json --raw) + "\n") | save --raw --append $env.MISE_CALLS
@@ -286,7 +284,6 @@ export def cases [] {
             run: {|fixture|
                 let base = mock-mise-installs (bootstrap-fixture $fixture)
                 let prefix = native-prefix $base
-                rm ($prefix | path join bin/shellcheck)
                 let mise_dir = $base.home | path join custom-mise
                 let f = $base | update env (
                     $base.env
@@ -305,7 +302,7 @@ export def cases [] {
                 mv ($f.bin | path join jj) ($f.home | path join .local/libexec/jj)
                 let packages = bootstrap $f ['--android-packages']
                 ok $packages
-                assert equal ($packages.stdout | lines) [golang]
+                assert equal ($packages.stdout | lines) [golang shellcheck]
                 ok (bootstrap $f ['--dry-run'])
                 absent $mise_dir
                 ok (bootstrap $f)
@@ -318,7 +315,8 @@ export def cases [] {
                     link ($f.home | path join xdg-data/dots/pkg/node/bin $binary) ($prefix | path join bin $binary)
                 }
                 link ($f.home | path join xdg-data/dots/pkg/go) ($prefix | path join lib/go)
-                for tool in [java erlang elixir shellcheck] {
+                link ($f.home | path join xdg-data/dots/pkg/shellcheck/bin/shellcheck) ($prefix | path join bin/shellcheck)
+                for tool in [java erlang elixir] {
                     absent ($f.home | path join xdg-data/dots/pkg $tool)
                 }
                 assert (($f.home | path join xdg-data/nushell/zoxide.nu) | path exists)
@@ -390,10 +388,7 @@ export def cases [] {
                 let base = mock-mise-installs (bootstrap-fixture $fixture)
                 let prefix = native-prefix $base
                 let f = $base | update env ($base.env | merge {TERMUX_VERSION: 'test' PREFIX: $prefix})
-                put ($f.config | path join mise/config.android.local.toml) '[settings]
-enable_tools = ["nu", "node", "fnox", "age", "zoxide", "carapace", "java", "erlang", "elixir", "shellcheck"]
-'
-                for root in [lib/jvm/java-25-openjdk lib/erlang opt/elixir bin/shellcheck] {
+                for root in [lib/go bin/shellcheck] {
                     let source = $prefix | path join $root
                     mv $source $"($source).saved"
                     let result = bootstrap $f
@@ -407,20 +402,17 @@ enable_tools = ["nu", "node", "fnox", "age", "zoxide", "carapace", "java", "erla
             }
         }
         {
-            name: test_android_local_selection_controls_native_packages_and_roots
+            name: test_android_overlay_selection_controls_native_packages_and_roots
             run: {|fixture|
                 let base = mock-mise-installs (bootstrap-fixture $fixture)
                 let prefix = native-prefix $base
                 let f = $base | update env ($base.env | merge {TERMUX_VERSION: 'test' PREFIX: $prefix})
-                put ($f.config | path join mise/config.android.local.toml) '[settings]
-enable_tools = ["nu", "node", "fnox", "age", "zoxide", "carapace", "java", "shellcheck"]
-'
                 let packages = bootstrap $f ['--android-packages']
                 ok $packages
-                assert equal ($packages.stdout | lines) [openjdk-25 shellcheck]
-                rm --recursive ($prefix | path join lib/go) ($prefix | path join lib/erlang) ($prefix | path join opt/elixir)
+                assert equal ($packages.stdout | lines) [golang shellcheck]
+                rm --recursive ($prefix | path join lib/jvm/java-25-openjdk) ($prefix | path join lib/erlang) ($prefix | path join opt/elixir)
                 ok (bootstrap $f)
-                link ($f.home | path join xdg-data/dots/pkg/java) ($prefix | path join lib/jvm/java-25-openjdk)
+                link ($f.home | path join xdg-data/dots/pkg/go) ($prefix | path join lib/go)
                 let shellcheck = $f.home | path join xdg-data/dots/pkg/shellcheck/bin/shellcheck
                 link $shellcheck ($prefix | path join bin/shellcheck)
                 ok (
@@ -430,7 +422,7 @@ enable_tools = ["nu", "node", "fnox", "age", "zoxide", "carapace", "java", "shel
                         ($prefix | path join bin/shellcheck)
                     ]
                 )
-                for tool in [go erlang elixir] { absent ($f.home | path join xdg-data/dots/pkg $tool) }
+                for tool in [java erlang elixir] { absent ($f.home | path join xdg-data/dots/pkg $tool) }
                 let project = $f.root | path join project
                 put ($project | path join mise.toml) (open --raw ($f.repo | path join mise/config.toml))
                 let selected = $f | update env ($f.env | merge {MISE_AUTO_ENV: '1'})
@@ -449,10 +441,12 @@ enable_tools = ["nu", "node", "fnox", "age", "zoxide", "carapace", "java", "shel
                     age
                     carapace
                     fnox
-                    java
+                    github:1broseidon/ketch
+                    go
                     node
                     nu
                     shellcheck
+                    zig
                     zoxide
                 ]
                 let executable = child $selected [

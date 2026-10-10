@@ -142,18 +142,12 @@ def main [
         | default ($mise_dir | path join "config.toml")
     )
     let android_tools = if $android {
-        let local = $mise_dir | path join "config.android.local.toml"
-        if ($local | path exists) {
-            let config = open $local
-            if ($config | columns) != ["settings"] or ($config.settings | columns) != ["enable_tools"] {
-                error make {msg: "Android local config may only set settings.enable_tools (names, not versions)."}
-            }
-        }
         # Preflight names only, before the native global links exist. Mise owns
         # version resolution/filtering; verify its effective settings after links.
-        let selected: list<string> = (open (if ($local | path exists) { $local } else {
-            $dots | path join "termux" "config.android.toml"
-        }) | get settings.enable_tools | sort | uniq)
+        let selected: list<string> = (
+            open ($dots | path join "termux" "config.android.toml")
+            | get settings.enable_tools | sort | uniq
+        )
         for tool in [
             nu
             node
@@ -439,7 +433,7 @@ def main [
         }
         let effective = do --capture-errors { ^mise --cd $dots --env android settings get enable_tools } | from json
         if $effective != $android_tools {
-            error make {msg: "Native mise selection differs from the Android overlay/local names. Stop before installation and review config precedence or MISE_ENABLE_TOOLS."}
+            error make {msg: "Native mise selection differs from the Android overlay names. Stop before installation and review config precedence or MISE_ENABLE_TOOLS."}
         }
         do --capture-errors { ^mise --cd $dots --env android install --yes }
     } else {

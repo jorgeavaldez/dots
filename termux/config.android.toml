@@ -1,7 +1,7 @@
 # Android selection and backend adaptation; all requested versions stay in config.toml.
-# Device opt-ins belong in adjacent config.android.local.toml (names only).
+# This shared list is the only Android selection; rerun the installer after editing it.
 [settings]
-enable_tools = ["nu", "node", "fnox", "age", "zoxide", "carapace", "go", "zig"]
+enable_tools = ["nu", "node", "fnox", "age", "zoxide", "carapace", "go", "zig", "shellcheck", "github:1broseidon/ketch"]
 # Native path aliases use installed Termux versions, not desktop "latest".
 [tool_alias.nu]
 backend = "github:nushell/nushell"
