@@ -35,6 +35,7 @@ export def init [] {
 # Local keys are encrypted with source-age using the enrolled device identity.
 # Run secrets refresh after changes to rebuild config.toml for shell loading.
 # Delete a [secrets] entry and refresh to remove it from the cache.
+# KETCH_HTTP_HEADERS is derived from the CF_ACCESS_* tokens during refresh.
 [providers.onepassword]
 type = "1password"
 
@@ -72,6 +73,9 @@ export def local [name: string]: nothing -> nothing, string -> nothing {
     let value = $in
     if $name == "DOTS_AGE_IDENTITY" {
         error make {msg: "DOTS_AGE_IDENTITY is reserved for the device key."}
+    }
+    if $name == "KETCH_HTTP_HEADERS" {
+        error make {msg: "KETCH_HTTP_HEADERS is derived during refresh. Store CF_ACCESS_CLIENT_ID and CF_ACCESS_CLIENT_SECRET instead."}
     }
     let config = (config-path)
     if not ($config | path exists) { error make {msg: "Run secrets setup first."} }
@@ -262,30 +266,41 @@ export def setup [--identity: path] {
 }
 
 # Refresh the global cache; the native hook reloads it at the next prompt.
-export def refresh [] {
+export def refresh [--if-enrolled] {
     if $nu.os-info.name not-in ["windows" "macos" "linux"] and not (termux) {
         error make {msg: "Secrets refresh supports Windows, macOS, Linux and Termux."}
     }
 
     let config = (config-path)
-    if not ($config | path exists) { error make {msg: "Run secrets setup first."} }
-
-    let local = (open $config)
-    if $local.providers.dots-age? == null { error make {msg: "Run secrets setup first."} }
+    let local = if ($config | path exists) { open $config } else { null }
+    if $local.providers?.dots-age? == null {
+        if $if_enrolled {
+            print "Secrets refresh skipped: device is not enrolled. Run secrets setup to enroll."
+            return
+        }
+        error make {msg: "Run secrets setup first."}
+    }
 
     let sources = (sources-path)
     if not ($sources | path exists) { error make {msg: "Run secrets init to create your private sources.toml."} }
 
     let entries = open $sources | get secrets
-    let names = $entries | columns
-    if "DOTS_AGE_IDENTITY" in $names {
+    let source_names = $entries | columns
+    if "DOTS_AGE_IDENTITY" in $source_names {
         error make {msg: "DOTS_AGE_IDENTITY is reserved for the device key."}
     }
+    if "KETCH_HTTP_HEADERS" in $source_names {
+        error make {msg: "KETCH_HTTP_HEADERS is derived during refresh. Remove its entry from sources.toml; keep the CF_ACCESS_CLIENT_ID and CF_ACCESS_CLIENT_SECRET sources."}
+    }
+    let ketch_headers = "CF_ACCESS_CLIENT_ID" in $source_names and "CF_ACCESS_CLIENT_SECRET" in $source_names
+    let names = if $ketch_headers {
+        $source_names | append "KETCH_HTTP_HEADERS"
+    } else { $source_names }
 
     let plaintext = ($entries | transpose name secret | where {|entry|
         $entry.secret.default? != null and $entry.secret.provider? == null and $entry.secret.value? == null
     } | get name)
-    let sourced = $names | where {|name| $name not-in $plaintext }
+    let sourced = $source_names | where {|name| $name not-in $plaintext }
     let fnox = (installed-tool fnox)
     let removed = ($local.secrets | transpose name secret | where {|entry|
         $entry.secret.provider? == "dots-age" and $entry.name not-in $names
@@ -340,6 +355,39 @@ export def refresh [] {
             )
         }
         $updated | update secrets ($cache | reject ...$removed) | to toml | save --force $pending
+        if $ketch_headers {
+            # Read the newly refreshed cache, never stale inherited shell tokens.
+            let client_id = (
+                ^$fnox --config $pending --profile default --no-daemon --non-interactive get CF_ACCESS_CLIENT_ID
+                | complete
+            )
+            let client_secret = (
+                ^$fnox --config $pending --profile default --no-daemon --non-interactive get CF_ACCESS_CLIENT_SECRET
+                | complete
+            )
+            if $client_id.exit_code != 0 or $client_secret.exit_code != 0 {
+                error make {msg: "Could not read refreshed Cloudflare Access tokens. The previous cache was preserved."}
+            }
+            let headers = {
+                "CF-Access-Client-Id": ($client_id.stdout | str trim)
+                "CF-Access-Client-Secret": ($client_secret.stdout | str trim)
+            }
+            let ketch = open ($dots | path join "ketch" "config.json")
+            mut origins = {}
+            for url in [$ketch.searxng_url $ketch.firecrawl_url] {
+                let origin = $url | url parse | select scheme host port | url join
+                $origins = $origins | upsert $origin $headers
+            }
+            let stored = (
+                $origins
+                | to json --raw
+                | ^$fnox --config $pending --profile default --no-daemon --non-interactive set KETCH_HTTP_HEADERS --provider dots-age
+                | complete
+            )
+            if $stored.exit_code != 0 {
+                error make {msg: "Could not encrypt KETCH_HTTP_HEADERS into the staged cache. The previous cache was preserved."}
+            }
+        }
         if $nu.os-info.name == "linux" or (termux) {
             do --capture-errors { ^chmod 600 $pending }
         }

@@ -184,6 +184,76 @@ ANDROID_TEST = { default = "synthetic-android" }
             }
         }
         {
+            name: test_ketch_headers_refresh_tracks_sources_rotation_and_removal
+            run: {|base|
+                let f = secret-fixture ($base | update env ($base.env | merge {
+                    CF_ACCESS_CLIENT_ID: 'stale-inherited-id'
+                    CF_ACCESS_CLIENT_SECRET: 'stale-inherited-secret'
+                }))
+                secrets $f 'secrets setup; "synthetic-id" | secrets local CF_ACCESS_CLIENT_ID; "synthetic-secret" | secrets local CF_ACCESS_CLIENT_SECRET' | ignore
+                let sources = $f.config | path dirname | path join sources.toml
+                let source_before = open --raw $sources
+                let result = secrets $f 'secrets refresh --if-enrolled'
+                lacks ($result.stdout + $result.stderr) synthetic-secret
+                assert equal (open --raw $sources) $source_before
+                assert equal (open $f.config).secrets.KETCH_HTTP_HEADERS.provider dots-age
+                lacks (open --raw $f.config) synthetic-secret
+                let ketch = open ($f.repo | path join ketch/config.json)
+                let origins = [$ketch.searxng_url $ketch.firecrawl_url] | each {|url| $url | url parse | select scheme host port | url join } | uniq | sort
+                let headers = (fnox $f [get KETCH_HTTP_HEADERS]).stdout | from json
+                assert equal ($headers | columns | sort) $origins
+                for origin in $origins {
+                    assert equal ($headers | get $origin) {
+                        'CF-Access-Client-Id': 'synthetic-id'
+                        'CF-Access-Client-Secret': 'synthetic-secret'
+                    }
+                }
+                secrets $f '"synthetic-rotated-secret" | secrets local CF_ACCESS_CLIENT_SECRET; secrets refresh' | ignore
+                let rotated = (fnox $f [get KETCH_HTTP_HEADERS]).stdout | from json
+                for origin in $origins {
+                    assert equal ($rotated | get $origin | get CF-Access-Client-Secret) synthetic-rotated-secret
+                }
+                lacks (open --raw $f.config) synthetic-rotated-secret
+
+                # A failed derived-secret write must not publish any staged changes.
+                let before = open --raw $f.config
+                script $f failing-ketch-fnox ('def --wrapped main [...args: string] {
+    if "set" in $args and "KETCH_HTTP_HEADERS" in $args { exit 73 }
+    exec @FNOX@ ...$args
+}' | str replace '@FNOX@' ($f.tools.fnox | to nuon))
+                discovery $f ($f.tools | update fnox ($f.bin | path join failing-ketch-fnox))
+                secrets $f 'secrets refresh' --fail | ignore
+                assert equal (open --raw $f.config) $before
+                no-staging $f '.dots-refresh-*'
+                discovery $f $f.tools
+
+                # Losing either dependency removes stale derived credentials.
+                open $sources | reject secrets.CF_ACCESS_CLIENT_SECRET | to toml | save --force $sources
+                secrets $f 'secrets refresh' | ignore
+                assert not ('KETCH_HTTP_HEADERS' in ((open $f.config).secrets | columns))
+                assert equal ((fnox $f [get CF_ACCESS_CLIENT_ID]).stdout | str trim) synthetic-id
+                op-absent $f
+            }
+        }
+        {
+            name: test_refresh_if_enrolled_skips_unenrolled_without_creating_state
+            run: {|base|
+                let f = secret-fixture $base
+                secrets $f 'secrets refresh --if-enrolled' | ignore
+                absent ($f.config | path dirname)
+                secrets $f 'secrets refresh' --fail | ignore
+                absent ($f.config | path dirname)
+                put $f.config '[providers.other]
+type = "age"
+recipients = []
+'
+                let before = open --raw $f.config
+                secrets $f 'secrets refresh --if-enrolled' | ignore
+                assert equal (open --raw $f.config) $before
+                absent ($f.config | path dirname | path join sources.toml)
+            }
+        }
+        {
             name: test_setup_adds_local_provider_without_replacing_source_entries
             run: {|base|
                 let f = secret-fixture $base
@@ -214,8 +284,10 @@ VAULT_PATH = { default = "/synthetic/vault" }
                 secrets $f 'secrets setup' | ignore
                 let sources = $f.config | path dirname | path join sources.toml
                 let before = open --raw $sources
-                secrets $f '"synthetic-local" | secrets local DOTS_AGE_IDENTITY' --fail | ignore
-                assert equal (open --raw $sources) $before
+                for name in [DOTS_AGE_IDENTITY KETCH_HTTP_HEADERS] {
+                    secrets $f $'"synthetic-local" | secrets local ($name)' --fail | ignore
+                    assert equal (open --raw $sources) $before
+                }
                 script $f failing-fnox 'def --wrapped main [...args: string] { exit 73 }'
                 discovery $f ($f.tools | update fnox ($f.bin | path join failing-fnox))
                 let result = secrets $f '"synthetic-local" | secrets local LOCAL_KEY' --fail

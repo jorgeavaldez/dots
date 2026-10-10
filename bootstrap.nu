@@ -119,12 +119,16 @@ def main [
             wezterm: ($home | path join ".config" "wezterm")
             jj: ($env.APPDATA | path join "jj" "config.toml")
             herdr: ($env.APPDATA | path join "herdr" "config.toml")
+            ketch: ($env.APPDATA | path join "ketch" "config.json")
             yazi: ($env.APPDATA | path join "yazi" "config")
         }
         macos | linux | android => {
             wezterm: ($config_home | path join "wezterm")
             jj: ($config_home | path join "jj" "config.toml")
             herdr: ($config_home | path join "herdr" "config.toml")
+            ketch: (if $os == "macos" {
+                $home | path join "Library" "Application Support" "ketch" "config.json"
+            } else { $config_home | path join "ketch" "config.json" })
             yazi: ($config_home | path join "yazi")
         }
         _ => { error make {msg: "This bootstrap supports Windows, macOS, Linux and Termux."} }
@@ -227,6 +231,10 @@ def main [
         {
             source: ($dots | path join "herdr" "config.toml")
             destination: $platform.herdr
+        }
+        {
+            source: ($dots | path join "ketch" "config.json")
+            destination: ($env.KETCH_CONFIG? | default $platform.ketch)
         }
         {
             source: ($dots | path join "git" "config")
@@ -374,7 +382,7 @@ def main [
         }
     }
     print $"Will generate zoxide integration: ($zoxide_init)"
-    print "Will install native fnox integration through secrets setup-shell (no credential enrollment)."
+    print "Will install native fnox integration and refresh secrets on enrolled devices (including derived Ketch headers); unenrolled devices are skipped."
     if $os in ["macos" "linux"] { print "Will install WezTerm terminfo into ~/.terminfo." }
     if $dry_run { return }
 
@@ -443,6 +451,7 @@ def main [
     mkdir ($zoxide_init | path dirname)
     $zoxide_script | save --force $zoxide_init
     secrets setup-shell
+    secrets refresh --if-enrolled
     for link in ($links | skip 1) {
         connect-config $link.source $link.destination $link.backup
     }

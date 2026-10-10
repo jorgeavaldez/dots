@@ -89,6 +89,9 @@ See [Linux bootstrap details and tests](docs/bootstrap-linux.md) for Arch/Debian
   Linux clipboard tools are assumed installed; headless SSH sessions need none.
 - `commit` accepts a message argument or piped text; no input opens jj's editor.
   `bump` moves the current bookmark to `@-` and refuses ambiguous/absent bookmarks.
+- `link-skills` links each skill in `~/.pi/agent/skills` and `private-skills` into
+  `~/.claude/skills` and `~/.codex/skills` for the agents that are installed. It
+  skips existing entries; rerun it after adding a skill.
 - `dco` aliases `docker compose`; Docker itself is not installed.
 - `BAT_THEME=ansi`; `EDITOR`/`VISUAL` default to Neovim without overriding an
   inherited editor. macOS keeps `GOPATH=~/proj/go`, Fly, and Obsidian paths.
@@ -194,11 +197,19 @@ after adding references or rotating keys; existing child processes need restarti
 to see updates. `DOTS_AGE_IDENTITY` is reserved for the device identity and is
 never exported.
 
+When both `CF_ACCESS_CLIENT_ID` and `CF_ACCESS_CLIENT_SECRET` are in the private
+source map, refresh derives `KETCH_HTTP_HEADERS` for the SearXNG and Firecrawl
+origins in `ketch/config.json` and encrypts it in the age cache. Do not add a
+separate `KETCH_HTTP_HEADERS` source entry. Rotation regenerates the headers;
+removing either token removes them. Reconnect Ketch with `/mcp reconnect ketch`
+in existing Pi sessions after refreshing.
+
 Bootstrap runs `secrets setup-shell` to generate `fnox activate nu` into Nu's
-device-local `vendor/autoload/fnox.nu`, without enrolling a device or resolving
-secrets. Interactive Nu sessions only load that file: no startup tool-path lookup
-or regeneration. fnox owns environment loading and follows project configs as you
-change directories. Its pre-prompt hook skips resolution
+device-local `vendor/autoload/fnox.nu`, then `secrets refresh --if-enrolled` to
+refresh enrolled devices, including derived Ketch headers. Unenrolled devices
+are skipped; bootstrap never enrolls them. Interactive Nu sessions only load
+that file: no startup tool-path lookup or regeneration. fnox owns environment
+loading and follows project configs as you change directories. Its pre-prompt hook skips resolution
 when configs and relevant settings are unchanged. Pi and other child processes
 inherit the loaded variables. Global keys still resolve from the local encrypted
 cache; new mappings in `sources.toml` require `secrets refresh` before they

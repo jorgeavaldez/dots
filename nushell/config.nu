@@ -75,6 +75,30 @@ def rmsymlink [link: path] {
     rm $link
 }
 
+# Link each Pi skill into the other installed agents' global skill directories.
+# ~/.agents/skills is excluded: Pi reads it too and would see every skill twice.
+# Existing entries are left alone, so rerun after adding a skill.
+def link-skills [] {
+    let skills = ["skills" "private-skills"]
+    | each {|dir| $nu.home-dir | path join ".pi" "agent" $dir }
+    | where {|dir| $dir | path exists }
+    | each {|dir| ls $dir | where type == dir | get name }
+    | flatten
+    for agent in [".claude" ".codex"] {
+        let home = $nu.home-dir | path join $agent
+        if not ($home | path exists) { continue }
+        let target = $home | path join "skills"
+        mkdir $target
+        for skill in $skills {
+            let link = $target | path join ($skill | path basename)
+            if not ($link | path exists --no-symlink) {
+                symlink $skill $link
+                print $"linked ($link)"
+            }
+        }
+    }
+}
+
 def --env proj [] {
     cd ("~" | path expand | path join "proj")
 }
