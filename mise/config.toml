@@ -67,6 +67,8 @@ taplo = "latest"
   "tree-sitter-typescript",
 ] }
 cloudflared = "latest"
+# cloudflare api cli
+"npm:cf" = "1.0.0-beta.14"
 herdr = "latest"
 "github:openclaw/gogcli" = "latest"
 gcloud = "latest"
