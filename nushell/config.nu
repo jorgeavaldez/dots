@@ -66,6 +66,9 @@ use $codex_usage_module
 const tools_module = path self | path expand | path dirname | path join "tools.nu"
 use $tools_module
 
+const repos_module = path self | path expand | path dirname | path join "repos.nu"
+use $repos_module
+
 # Remove only links, never their targets or ordinary files/directories.
 def rmsymlink [link: path] {
     let link = $link | path expand --no-symlink
@@ -198,16 +201,6 @@ def pbpaste []: nothing -> string {
         }
     }
     $result.stdout
-}
-
-def repo-url [repo_name?: string]: nothing -> string {
-    $repo_name
-    | default {
-        pwd | path basename
-    }
-    | gh repo view $in --json sshUrl
-    | from json
-    | get sshUrl
 }
 
 use ($nu.cache-dir | path join "mise.nu")
