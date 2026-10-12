@@ -128,3 +128,6 @@ uvx = true
 [settings.github]
 use_git_credentials = true
 credential_command = "gh auth token"
+
+[settings.skills]
+dir = ".agents/skills"
