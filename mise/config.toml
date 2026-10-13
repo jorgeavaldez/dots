@@ -54,18 +54,6 @@ bun = "latest"
 "npm:hunkdiff" = "latest"
 actionlint = "latest"
 taplo = "latest"
-"npm:@tobilu/qmd" = { version = "latest", os = [
-  "linux",
-  "macos",
-], allow_builds = [
-  "better-sqlite3",
-  "node-llama-cpp",
-  "tree-sitter-go",
-  "tree-sitter-javascript",
-  "tree-sitter-python",
-  "tree-sitter-rust",
-  "tree-sitter-typescript",
-] }
 cloudflared = "latest"
 # cloudflare api cli
 "npm:cf" = "1.0.0-beta.14"
