@@ -56,6 +56,9 @@ latest = "path:{{ env.XDG_DATA_HOME }}/dots/pkg/elixir"
 # Use Mix's supported opt-out; serialize builds sharing a build directory.
 [env]
 MIX_OS_CONCURRENCY_LOCK = "0"
+# pi-agent-browser-native only finds its private Termux socket dir through
+# TERMUX_APP__PACKAGE_NAME, which this Termux build does not export; /tmp is unusable.
+PI_AGENT_BROWSER_SOCKET_DIR = "/data/data/com.termux/piab"
 
 # Approved Termux workaround: TLS stays verified, but aube's additional
 # trust-downgrade check is bypassed. See README's Termux section.
