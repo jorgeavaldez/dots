@@ -33,10 +33,24 @@ if $nu.os-info.name == "macos" {
 if (termux) {
     $env.LANG = ($env.LANG? | default "en_US.UTF-8")
     $env.LC_CTYPE = ($env.LC_CTYPE? | default "en_US.UTF-8")
-    # Reuse a forwarded/device agent. Never start an agent or load keys here.
-    if ($env.SSH_AUTH_SOCK? | default "") == "" {
-        let socket = $env.PREFIX | path join "var" "run" "ssh-agent.socket"
-        if ($socket | path expand | path type) == "socket" { $env.SSH_AUTH_SOCK = $socket }
+    # Termux starts its runit services only from POSIX login profiles, and Nu is
+    # the Termux shell, so start the supervisor (ssh-agent, sshd) here instead.
+    let daemon = $env.PREFIX | path join "bin" "service-daemon"
+    # PIDs are reused across reboots, so check that the recorded one is runsvdir.
+    let running = try {
+        let pid = open ($env.PREFIX | path join "var" "run" "service-daemon.pid") | str trim
+        open --raw ("/proc" | path join $pid "cmdline") | str contains "runsvdir"
+    } catch { false }
+    if ($daemon | path exists) and not $running {
+        with-env {SVDIR: ($env.PREFIX | path join "var" "service") LOGDIR: ($env.PREFIX | path join "var" "log")} {
+            ^$daemon start out+err> /dev/null
+        }
+    }
+    # Keep a live forwarded agent (SSH, or Herdr's link to its client's agent).
+    # A dead link, such as Herdr's when its client had no agent, falls back to
+    # the device agent. Never load keys here; run `ssh-add` once per agent start.
+    if ($env.SSH_AUTH_SOCK? | default "" | path expand | path type) != "socket" {
+        $env.SSH_AUTH_SOCK = $env.PREFIX | path join "var" "run" "ssh-agent.socket"
     }
 }
 

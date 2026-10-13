@@ -425,6 +425,14 @@ links. Existing Zsh files and the login shell are unchanged; start `nu` explicit
 previews shared bootstrap without package/network changes. There is no destructive
 `--force`: files are backed up and directory conflicts stop setup.
 
+Termux only starts its service supervisor from POSIX login profiles, so Nu
+startup starts it when it is not running; it supervises the `ssh-agent` service.
+Nu keeps a live forwarded agent and otherwise uses the device agent, including
+when Herdr's agent link is dead because its client attached without an agent.
+The key has a passphrase, so after Termux or the phone restarts, run `ssh-add`
+once in a Termux shell. Herdr panes follow once the Herdr client reattaches
+from a shell that has the agent.
+
 `mise/config.toml` remains the unchanged canonical tool/version catalog. The
 `termux/config.android.toml` overlay is installed as
 `$MISE_CONFIG_DIR/config.android.toml` (default `~/.config/mise`). Its native

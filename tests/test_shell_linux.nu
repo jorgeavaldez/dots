@@ -69,7 +69,8 @@ export def cases [] {
                     )
                 ).stdout | from json
                 assert equal $state.clipboard $text
-                assert equal $state.sock $f.env.SSH_AUTH_SOCK
+                # A dead inherited agent path, like Herdr's link without a client agent, falls back.
+                assert equal $state.sock ($f.env.PREFIX | path join var/run/ssh-agent.socket)
                 assert equal $state.lang 'custom.UTF-8'
                 assert equal $state.ctype 'en_US.UTF-8'
                 assert equal $state.jj ['--version']
@@ -203,6 +204,23 @@ test "$status" = 0
                 assert equal $state.sock ($prefix | path join var/run/ssh-agent.socket)
                 assert equal $state.lang 'en_US.UTF-8'
                 absent ($f.config | path join fnox)
+                # Nu starts the Termux service supervisor that POSIX login profiles would.
+                let daemon = $prefix | path join bin/service-daemon
+                put $daemon (
+                    $"#!($f.tools.nu) --no-config-file\n"
+                    + 'def main [action: string] { [$action $env.SVDIR] | to json -r | save --force ($env.HOME | path join daemon) }'
+                    + "\n"
+                )
+                ok (^chmod 755 $daemon | complete)
+                interactive $f 'null' | ignore
+                assert equal (open ($f.home | path join daemon) | from json) ['start' ($prefix | path join var/service)]
+                # A live forwarded agent wins over the device agent.
+                let forwarded = $base.root | path join forwarded.sock
+                ok (child $base [$python.0.path '-c' 'import socket, sys; s = socket.socket(socket.AF_UNIX); s.bind(sys.argv[1]); s.close()' $forwarded])
+                let kept = (
+                    interactive ($f | update env ($f.env | merge {SSH_AUTH_SOCK: $forwarded})) '$env.SSH_AUTH_SOCK | to json -r'
+                ).stdout | from json
+                assert equal $kept $forwarded
             }
         }
         {
