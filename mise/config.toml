@@ -73,6 +73,9 @@ bat = "latest"
 "github:noborus/ov" = "latest"
 "aqua:LuaLS/lua-language-server" = "latest"
 "github:1broseidon/ketch" = { version = "0.19.0" }
+# Android builds ketch with native Go: the Linux release resolves DNS through the
+# missing /etc/resolv.conf. Keep both versions in step.
+"go:github.com/1broseidon/ketch" = { version = "0.19.0", os = ["android"] }
 "go:golang.org/x/tools/gopls" = "latest"
 golangci-lint = "latest"
 cargo-binstall = "latest"

@@ -437,7 +437,8 @@ from a shell that has the agent.
 `termux/config.android.toml` overlay is installed as
 `$MISE_CONFIG_DIR/config.android.toml` (default `~/.config/mise`). Its native
 `settings.enable_tools` allowlist selects **nu, node, fnox, age, zoxide,
-carapace, go, zig, shellcheck and ketch**. Mise filters unselected global and project declarations
+carapace, go, zig, shellcheck and ketch** (built from source with native Go, because the
+Linux release cannot resolve DNS on Android). Mise filters unselected global and project declarations
 before version/metadata resolution, including GitHub Pi and Cargo nufmt. Native
 Pi and the compiled `~/.local/bin/nufmt` remain independent exceptions.
 

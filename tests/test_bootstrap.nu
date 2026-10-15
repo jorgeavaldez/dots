@@ -441,8 +441,8 @@ export def cases [] {
                     age
                     carapace
                     fnox
-                    github:1broseidon/ketch
                     go
+                    go:github.com/1broseidon/ketch
                     node
                     nu
                     shellcheck

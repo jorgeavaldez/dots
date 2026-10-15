@@ -1,7 +1,7 @@
 # Android selection and backend adaptation; all requested versions stay in config.toml.
 # This shared list is the only Android selection; rerun the installer after editing it.
 [settings]
-enable_tools = ["nu", "node", "fnox", "age", "zoxide", "carapace", "go", "zig", "shellcheck", "github:1broseidon/ketch"]
+enable_tools = ["nu", "node", "fnox", "age", "zoxide", "carapace", "go", "zig", "shellcheck", "go:github.com/1broseidon/ketch"]
 # Native path aliases use installed Termux versions, not desktop "latest".
 [tool_alias.nu]
 backend = "github:nushell/nushell"
