@@ -183,7 +183,34 @@ HOMELAB_URL = { default = "https://example.invalid" }
 private source file; never put credentials there. Provider-backed entries can
 use any fnox source provider configured in this file, not just 1Password.
 For 1Password, enter `op://` references, not credential values. Authenticate with
-your source provider when using remote references, then rebuild the local cache:
+your source provider when using remote references, then rebuild the local cache.
+
+`op` reads from one default account. On a device signed in to several
+1Password accounts (say work and personal), define one provider per account with
+fnox's `account` field (sign-in address, shorthand, email or account ID) and
+point each entry at the provider for its account:
+
+```toml
+[providers.op-personal]
+type = "1password"
+account = "my.1password.com"
+
+[providers.op-work]
+type = "1password"
+account = "example.1password.com"
+
+[secrets]
+OPENAI_API_KEY = { provider = "op-personal", value = "op://Private/OpenAI/credential" }
+WORK_TOKEN = { provider = "op-work", value = "op://Employee/Work token/credential" }
+```
+
+The vault is part of each `op://vault/item/field` reference. Refresh checks each
+used provider's account against `op account list` and stops before changing
+anything if an account is not signed in, or if a provider has no account while
+several are (unless `OP_ACCOUNT` or a service-account token picks it). A single
+signed-in account needs no `account` field.
+
+Then refresh:
 
 ```nu
 secrets refresh

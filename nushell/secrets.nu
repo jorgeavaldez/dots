@@ -13,6 +13,30 @@ def --env installed-tool [name: string] {
     $result.stdout | str trim
 }
 
+# Captured fnox call that fails with the step, the argv and fnox's own diagnostics.
+# Values only ever travel on stdin, so argv and stderr hold names and paths.
+# Never write "(fnox ...)" inside $"...": Nu runs it as a command.
+def fnox-run [
+    fnox: string
+    step: string
+    help: string
+    args: list<string>
+]: any -> record {
+    let result = $in | ^$fnox ...$args | complete
+    if $result.exit_code != 0 {
+        let stderr = $result.stderr | ansi strip | str trim
+        error make --unspanned {
+            msg: ([
+                $"($step) failed: fnox exited with code ($result.exit_code)."
+                $"Command: ($fnox) ($args | str join ' ')"
+                (if $stderr == "" { "fnox printed no diagnostics." } else { $stderr })
+            ] | str join "\n")
+            help: $help
+        }
+    }
+    $result
+}
+
 def config-path [] {
     $env.FNOX_CONFIG_DIR? | default ($nu.home-dir | path join ".config" "fnox") | path join "config.toml" | path expand
 }
@@ -38,6 +62,8 @@ export def init [] {
 # KETCH_HTTP_HEADERS is derived from the CF_ACCESS_* tokens during refresh.
 [providers.onepassword]
 type = "1password"
+# Signed in to several 1Password accounts? One provider per account, e.g.
+# account = "my.1password.com", and point each entry at the matching provider.
 
 [secrets]
 # OPENAI_API_KEY = { provider = "onepassword", value = "op://Vault/Item/credential" }
@@ -252,7 +278,7 @@ export def setup [--identity: path] {
             | complete
         )
         if $stored.exit_code != 0 {
-            error make {msg: $"Could not store the device identity in the OS credential store (fnox exit ($stored.exit_code))."}
+            error make {msg: $"Could not store the device identity in the OS credential store: fnox exited with code ($stored.exit_code).\n($stored.stderr | ansi strip | str trim)"}
         }
         # Keep only our intended config, including env=false, after fnox set.
         $settings | to toml | save --force $pending
@@ -265,7 +291,138 @@ export def setup [--identity: path] {
     print $"Secrets device configured. Use secrets local KEY or add references to (sources-path), then run secrets refresh."
 }
 
+# Sign-in address, its shorthand, email or account/user ID, as op accepts.
+def find-account [accounts: table, wanted: string] {
+    $accounts | where {|account|
+        [
+            $account.url
+            ($account.url | split row "." | first)
+            $account.email
+            $account.account_uuid
+            $account.user_uuid
+        ] | any {|candidate|
+            # Case-insensitive equality without the renamed case commands.
+            ($candidate | str length) == ($wanted | str length) and ($candidate | str contains --ignore-case $wanted)
+        }
+    }
+}
+
+# op resolves through one default account. On a device signed in to several
+# (work and personal), define one 1Password provider per account with fnox's
+# account field and point each entry at the right one; unpinned providers are
+# rejected there instead of silently reading the wrong account.
+def check-onepassword-accounts [providers: record, entries: table] {
+    let used = $entries | get secret.provider | uniq
+    # A service account has exactly one account and no sign-in list to check.
+    if $env.OP_SERVICE_ACCOUNT_TOKEN? != null { return [] }
+    let listed = (^op account list --format json | complete)
+    if $listed.exit_code != 0 {
+        return [$"op account list failed: ($listed.stderr | ansi strip | str trim)"]
+    }
+    let accounts = $listed.stdout | str trim | if ($in | is-empty) { [] } else { $in | from json }
+    let known = $accounts | each {|account| $"($account.url) as ($account.email)" } | str join ", " | if ($in | is-empty) { "none" } else { $in }
+    mut problems = []
+    for name in $used {
+        let account = $providers | get $name | get --optional account
+        let users = $entries | where secret.provider == $name | get name | str join ", "
+        if $account == null {
+            if $env.OP_ACCOUNT? == null and ($accounts | length) > 1 {
+                $problems = $problems | append $"1Password provider ($name), used by ($users), has no account while op is signed in to several: ($known). Set account on it, or define one provider per account."
+            }
+            continue
+        }
+        let matches = find-account $accounts $account
+        if ($matches | length) != 1 {
+            let issue = if ($matches | is-empty) { "is not a signed-in 1Password account" } else { "matches several accounts; use the account ID" }
+            $problems = $problems | append $"1Password provider ($name) account ($account) ($issue). Signed in: ($known)."
+        }
+    }
+    $problems
+}
+
+# Unmet setup conditions, reported together before anything is staged.
+def refresh-preflight [
+    fnox: string
+    config: path
+    local: record
+    sources: path
+    source_config: record
+] {
+    let version = (^$fnox --version | complete).stdout | str trim
+    let sync_help = (^$fnox sync --help | complete).stdout
+    let flags = [
+        --global
+        --provider
+        --force
+        --no-daemon
+        --non-interactive
+        --if-missing
+    ]
+    let unsupported = $flags | where {|flag| not ($sync_help | str contains $flag) }
+    if ($unsupported | is-not-empty) {
+        error make --unspanned {
+            msg: $"($version | default 'fnox') at ($fnox) does not support sync ($unsupported | str join ', ')."
+            help: "Upgrade fnox with mise from the dots checkout, then run secrets setup-shell and secrets refresh."
+        }
+    }
+
+    mut problems = []
+    let age = $local.providers.dots-age
+    if $age.key_file? != null {
+        if not ($age.key_file | path expand | path exists) {
+            $problems = $problems | append $"Device age identity file ($age.key_file) is missing. Restore it, or import it with secrets setup --identity; the cache cannot be decrypted without it."
+        }
+    } else if $age.identity? != null {
+        # The key is captured and discarded; only readability matters here.
+        let identity = (
+            ^$fnox --config $config --profile default --no-daemon --non-interactive get DOTS_AGE_IDENTITY
+            | complete
+        )
+        if $identity.exit_code != 0 {
+            $problems = $problems | append $"Device age identity could not be read from the OS credential store: ($identity.stderr | ansi strip | str trim). Unlock it; secrets setup never replaces an existing identity."
+        }
+    } else {
+        $problems = $problems | append $"dots-age in ($config) has neither key_file nor identity. Run secrets setup."
+    }
+
+    let local_providers = $local.providers? | default {}
+    let providers = $local_providers | merge ($source_config.providers? | default {})
+    let secrets = $source_config.secrets? | default {} | transpose name secret
+    for entry in $secrets {
+        let secret = $entry.secret
+        if ($secret | describe) !~ '^record' {
+            $problems = $problems | append $"($entry.name) must be a table, e.g. { default = \"...\" } or { provider = \"...\", value = \"...\" }."
+        } else if $secret.provider? == null and $secret.value? == null and $secret.default? == null {
+            $problems = $problems | append $"($entry.name) has no provider, value or default."
+        } else if $secret.provider? != null and $secret.provider not-in ($providers | columns) {
+            let hint = if $secret.provider == "source-age" { " Run secrets init to add it." } else { "" }
+            $problems = $problems | append $"($entry.name) uses provider ($secret.provider), which is not defined in ($sources).($hint)"
+        }
+    }
+    let onepassword = $secrets | where {|entry|
+        let provider = $entry.secret.provider?
+        $provider != null and ($providers | get --optional $provider | get --optional type) == "1password"
+    }
+    if ($onepassword | is-not-empty) and (which op | is-empty) {
+        $problems = $problems | append $"The 1Password CLI op is not on PATH; needed for ($onepassword.name | str join ', ')."
+    } else if ($onepassword | is-not-empty) {
+        $problems = $problems | append (check-onepassword-accounts $providers $onepassword)
+    }
+    if ($problems | is-not-empty) {
+        error make --unspanned {
+            msg: (
+                $problems
+                | each {|problem| $"- ($problem)" }
+                | prepend "Secrets refresh cannot run yet:"
+                | str join "\n"
+            )
+            help: "Nothing was changed. Fix the items above and rerun secrets refresh."
+        }
+    }
+}
+
 # Refresh the global cache; the native hook reloads it at the next prompt.
+# All-or-nothing and repeatable: the live cache changes only after every step works.
 export def refresh [--if-enrolled] {
     if $nu.os-info.name not-in ["windows" "macos" "linux"] and not (termux) {
         error make {msg: "Secrets refresh supports Windows, macOS, Linux and Termux."}
@@ -278,20 +435,24 @@ export def refresh [--if-enrolled] {
             print "Secrets refresh skipped: device is not enrolled. Run secrets setup to enroll."
             return
         }
-        error make {msg: "Run secrets setup first."}
+        error make {msg: $"No enrolled device config with a dots-age provider at ($config). Run secrets setup first."}
     }
 
     let sources = (sources-path)
-    if not ($sources | path exists) { error make {msg: "Run secrets init to create your private sources.toml."} }
+    if not ($sources | path exists) { error make {msg: $"Missing ($sources). Run secrets init to create your private sources.toml."} }
+    let source_config = open $sources
 
-    let entries = open $sources | get secrets
+    let entries = $source_config.secrets? | default {}
     let source_names = $entries | columns
     if "DOTS_AGE_IDENTITY" in $source_names {
-        error make {msg: "DOTS_AGE_IDENTITY is reserved for the device key."}
+        error make {msg: "DOTS_AGE_IDENTITY is reserved for the device key. Remove its entry from sources.toml."}
     }
     if "KETCH_HTTP_HEADERS" in $source_names {
         error make {msg: "KETCH_HTTP_HEADERS is derived during refresh. Remove its entry from sources.toml; keep the CF_ACCESS_CLIENT_ID and CF_ACCESS_CLIENT_SECRET sources."}
     }
+    let fnox = (installed-tool fnox)
+    refresh-preflight $fnox $config $local $sources $source_config
+
     let ketch_headers = "CF_ACCESS_CLIENT_ID" in $source_names and "CF_ACCESS_CLIENT_SECRET" in $source_names
     let names = if $ketch_headers {
         $source_names | append "KETCH_HTTP_HEADERS"
@@ -301,13 +462,22 @@ export def refresh [--if-enrolled] {
         $entry.secret.default? != null and $entry.secret.provider? == null and $entry.secret.value? == null
     } | get name)
     let sourced = $source_names | where {|name| $name not-in $plaintext }
-    let fnox = (installed-tool fnox)
-    let removed = ($local.secrets | transpose name secret | where {|entry|
+    let removed = ($local.secrets? | default {} | transpose name secret | where {|entry|
         $entry.secret.provider? == "dots-age" and $entry.name not-in $names
     } | get name)
+    let preserved = "The previous cache and shell environment were preserved."
+    let fnox_args = [--profile default --no-daemon --non-interactive]
+
+    # Interrupted runs can leave staging behind; no live refresh is this old.
+    let directory = $config | path dirname
+    for stale in (glob ($directory | path join ".dots-refresh-*")) {
+        if ((date now) - (ls --directory $stale | get 0.modified)) > 1day {
+            rm --recursive --force $stale
+        }
+    }
 
     # Keep the live cache usable while syncing; publish only after success.
-    let staging = $config | path dirname | path join $".dots-refresh-(random uuid)"
+    let staging = $directory | path join $".dots-refresh-(random uuid)"
     let pending = $staging | path join "config.toml"
     mkdir $staging
     try {
@@ -316,33 +486,27 @@ export def refresh [--if-enrolled] {
         }
         cp $config $pending
         if ($sourced | is-not-empty) {
-            let result = (with-env {FNOX_CONFIG_DIR: $staging} {
-                ^$fnox --config $sources --profile default --no-daemon --non-interactive --if-missing error sync --global --provider dots-age --force ...$sourced | complete
-            })
-            if $result.exit_code != 0 {
-                error make {msg: $"Secrets refresh failed (fnox exit ($result.exit_code)). Check source-provider access and the references in ($sources). The previous cache and shell environment were preserved."}
-            }
+            with-env {FNOX_CONFIG_DIR: $staging} {
+                (fnox-run $fnox "Syncing provider-backed secrets"
+                    $"Check provider sign-in and the references in ($sources). ($preserved)"
+                    [--config $sources ...$fnox_args --if-missing error sync --global --provider dots-age --force ...$sourced])
+            } | ignore
         }
         for name in $plaintext {
-            let stored = (
-                $entries
-                | get $name
-                | get default
-                | ^$fnox --config $pending --profile default --no-daemon --non-interactive set $name --provider dots-age
-                | complete
-            )
-            if $stored.exit_code != 0 {
-                error make {msg: $"Could not encrypt ($name) into the staged cache (fnox exit ($stored.exit_code)). The previous cache was preserved."}
-            }
+            (
+                $entries | get $name | get default | into string
+                | fnox-run $fnox $"Encrypting the default for ($name)" $preserved
+                    [--config $pending ...$fnox_args set $name --provider dots-age]
+            ) | ignore
         }
         let updated = (open $pending)
-        mut cache = $updated.secrets
+        mut cache = $updated.secrets? | default {}
         for name in $sourced {
-            let secret = $cache | get $name
+            let secret = $cache | get --optional $name
             # fnox keeps the remote reference plus an encrypted sync stanza.
             # Keep global shell keys local-only; remote references stay in sources.toml.
-            if $secret.sync.provider? != "dots-age" {
-                error make {msg: $"fnox did not produce the local encrypted cache for ($name)."}
+            if $secret.sync?.provider? != "dots-age" {
+                error make {msg: $"fnox sync did not produce a local dots-age cache entry for ($name). ($preserved)"}
             }
             $cache = (
                 $cache
@@ -354,23 +518,16 @@ export def refresh [--if-enrolled] {
                 )
             )
         }
-        $updated | update secrets ($cache | reject ...$removed) | to toml | save --force $pending
+        $updated | upsert secrets ($cache | reject ...$removed) | to toml | save --force $pending
         if $ketch_headers {
             # Read the newly refreshed cache, never stale inherited shell tokens.
-            let client_id = (
-                ^$fnox --config $pending --profile default --no-daemon --non-interactive get CF_ACCESS_CLIENT_ID
-                | complete
-            )
-            let client_secret = (
-                ^$fnox --config $pending --profile default --no-daemon --non-interactive get CF_ACCESS_CLIENT_SECRET
-                | complete
-            )
-            if $client_id.exit_code != 0 or $client_secret.exit_code != 0 {
-                error make {msg: "Could not read refreshed Cloudflare Access tokens. The previous cache was preserved."}
+            let read = {|name|
+                (fnox-run $fnox $"Reading refreshed ($name)" $preserved
+                    [--config $pending ...$fnox_args get $name]).stdout | str trim
             }
             let headers = {
-                "CF-Access-Client-Id": ($client_id.stdout | str trim)
-                "CF-Access-Client-Secret": ($client_secret.stdout | str trim)
+                "CF-Access-Client-Id": (do $read CF_ACCESS_CLIENT_ID)
+                "CF-Access-Client-Secret": (do $read CF_ACCESS_CLIENT_SECRET)
             }
             let ketch = open ($dots | path join "ketch" "config.json")
             mut origins = {}
@@ -378,15 +535,11 @@ export def refresh [--if-enrolled] {
                 let origin = $url | url parse | select scheme host port | url join
                 $origins = $origins | upsert $origin $headers
             }
-            let stored = (
-                $origins
-                | to json --raw
-                | ^$fnox --config $pending --profile default --no-daemon --non-interactive set KETCH_HTTP_HEADERS --provider dots-age
-                | complete
-            )
-            if $stored.exit_code != 0 {
-                error make {msg: "Could not encrypt KETCH_HTTP_HEADERS into the staged cache. The previous cache was preserved."}
-            }
+            (
+                $origins | to json --raw
+                | fnox-run $fnox "Encrypting KETCH_HTTP_HEADERS" $preserved
+                    [--config $pending ...$fnox_args set KETCH_HTTP_HEADERS --provider dots-age]
+            ) | ignore
         }
         if $nu.os-info.name == "linux" or (termux) {
             do --capture-errors { ^chmod 600 $pending }
@@ -394,8 +547,9 @@ export def refresh [--if-enrolled] {
         mv --force $pending $config
     } catch {|err|
         rm --recursive --force $staging
-        error make {msg: $err.msg}
+        # Re-raise the original error with its source, help and fnox diagnostics.
+        $err.raw
     }
-    rm --recursive $staging
+    rm --recursive --force $staging
     print $"Refreshed ($names | length) cached secrets. fnox reloads at the next prompt; restart existing child processes to pick up changes."
 }
