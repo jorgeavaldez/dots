@@ -402,7 +402,7 @@ See [Yazi setup](yazi/README.md) for installing its theme and macOS clipboard de
 
 It also downloads the latest WezTerm terminfo definitions from upstream and installs them into `~/.terminfo` so tools like `less` work when `TERM=wezterm`.
 
-On Linux outside Termux, interactive Zsh shells start or reuse `keychain` and may request the SSH key passphrase. All Zsh sessions, including non-interactive SSH commands, reuse that unlocked agent until the machine or agent restarts.
+On Linux outside Termux, Zsh uses OpenSSH's systemd user agent (`$XDG_RUNTIME_DIR/openssh_agent`, socket-activated by `ssh-agent.socket`) when it exists, so systemd user units share it; otherwise interactive shells start or reuse `keychain`. Either way an interactive shell may request the SSH key passphrase once, and all Zsh sessions, including non-interactive SSH commands, reuse that unlocked agent until the machine or agent restarts.
 
 ## Termux on Android
 

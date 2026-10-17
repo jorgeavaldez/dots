@@ -51,9 +51,16 @@ if [[ -o interactive && -n "${TERMUX_VERSION:-}" ]]; then
         eval "$(keychain --eval --quiet --ssh-allow-forwarded id_ed25519)"
     fi
     unset termux_ssh_auth_sock
-elif [[ -o interactive && "$OSTYPE" == linux* && ! -S "${SSH_AUTH_SOCK:-}" ]] &&
-    command -v keychain >/dev/null 2>&1 && [[ -f "$HOME/.ssh/id_ed25519" ]]; then
-    eval "$(keychain --eval --quiet id_ed25519)"
+elif [[ -o interactive && "$OSTYPE" == linux* && -f "$HOME/.ssh/id_ed25519" ]]; then
+    if [[ "${SSH_AUTH_SOCK:-}" == "${XDG_RUNTIME_DIR:-/run/user/$UID}/openssh_agent" ]]; then
+        # The systemd user agent outlives logins: unlock the key once per boot.
+        timeout 3 ssh-add -l >/dev/null 2>&1
+        if (( $? == 1 )); then
+            ssh-add "$HOME/.ssh/id_ed25519"
+        fi
+    elif [[ ! -S "${SSH_AUTH_SOCK:-}" ]] && command -v keychain >/dev/null 2>&1; then
+        eval "$(keychain --eval --quiet id_ed25519)"
+    fi
 fi
 
 export EDITOR="nvim"

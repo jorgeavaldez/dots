@@ -16,6 +16,10 @@ if [[ -n "${TERMUX_VERSION:-}" ]]; then
 elif [[ "$OSTYPE" == linux* && ! -S "${SSH_AUTH_SOCK:-}" ]]; then
     if [[ -S "$HOME/.1password/agent.sock" ]]; then
         export SSH_AUTH_SOCK="$HOME/.1password/agent.sock"
+    elif [[ -S "${XDG_RUNTIME_DIR:-/run/user/$UID}/openssh_agent" ]]; then
+        # OpenSSH's socket-activated systemd user agent, shared with user units.
+        export SSH_AUTH_SOCK="${XDG_RUNTIME_DIR:-/run/user/$UID}/openssh_agent"
+        unset SSH_AGENT_PID
     else
         keychain_env="$HOME/.keychain/${HOST%%.*}-sh"
         if [[ -r "$keychain_env" ]]; then
