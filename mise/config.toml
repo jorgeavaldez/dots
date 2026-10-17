@@ -107,6 +107,10 @@ rename_exe = { "lua[0-9]*.exe" = "lua.exe", "luac[0-9]*.exe" = "luac.exe", "wlua
 "brew:pkgconf" = { os = "macos" }
 "brew-cask:wezterm@nightly" = { os = "macos" }
 
+# Global npm installs live in the active Node version, so check after every install.
+[hooks]
+postinstall = { task = "monchu:install" }
+
 [settings]
 idiomatic_version_file_enable_tools = ["python"]
 experimental = true

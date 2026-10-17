@@ -50,6 +50,7 @@ alias e = ^nvim
 alias c = clear
 alias l = ls --all --long
 alias h = herdr
+alias m = monchu
 alias dco = ^docker compose
 # Replace Nu to reload startup files; temporary variables/definitions are lost.
 alias reload = exec nu

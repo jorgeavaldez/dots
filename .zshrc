@@ -90,6 +90,7 @@ alias evim="nvim $HOME/.config/nvim/init.lua"
 alias h="herdr"
 alias hrd="herdr"
 alias hd="herdr"
+alias m="monchu"
 
 function mise-use-private() {
     local config_path="$HOME/.config/mise.toml"
