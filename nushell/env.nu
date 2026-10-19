@@ -42,6 +42,9 @@ if (termux) {
         open --raw ("/proc" | path join $pid "cmdline") | str contains "runsvdir"
     } catch { false }
     if ($daemon | path exists) and not $running {
+        # openssh upgrades reinstall the service's `down` file, which keeps the
+        # agent from starting at boot, so drop it before runsvdir reads it.
+        rm -f ($env.PREFIX | path join "var" "service" "ssh-agent" "down")
         with-env {SVDIR: ($env.PREFIX | path join "var" "service") LOGDIR: ($env.PREFIX | path join "var" "log")} {
             ^$daemon start out+err> /dev/null
         }
