@@ -470,7 +470,9 @@ export def refresh [--if-enrolled] {
 
     # Interrupted runs can leave staging behind; no live refresh is this old.
     let directory = $config | path dirname
-    for stale in (glob ($directory | path join ".dots-refresh-*")) {
+    # ls, not glob: Windows backslashes parse as glob escapes.
+    let stales = ls --all $directory | where {|entry| ($entry.name | path basename) starts-with ".dots-refresh-" } | get name
+    for stale in $stales {
         if ((date now) - (ls --directory $stale | get 0.modified)) > 1day {
             rm --recursive --force $stale
         }
